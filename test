@@ -1,0 +1,46 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let address = base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov'
+
+let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let poolString = toBase58String(poolId)
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let westId = base58'4LHHvYGNKJUg5hj65aGD5vgScvCBmLpdRFtjokvCjSL8'
+
+let westamount = assetBalance(Address(address), westId)
+let westpmt = AttachedPayment(westId,westamount)
+
+let burnxtnamount = assetBalance(Address(address), burnxtnId)
+let pmtpool = AttachedPayment(burnxtnId,burnxtnamount)
+let xtnamount = assetBalance(Address(address), xtnId)
+
+let xtnBurn = Burn(xtnId, xtnamount)
+let burnxtnBurn = Burn(burnxtnId, burnxtnamount)
+
+
+@Callable(i)
+func ClaimBurn() = {
+        strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+        let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
+    [
+    scTxRefund,
+    xtnBurn,
+    burnxtnBurn
+    ]
+    }
+
+@Callable(i)
+func Swap() = {
+    strict swapInv = invoke(Address(poolId), "swap", [burnxtnId,1], [westpmt])
+    }
+}
+
+@Callable(i)
+func PoolOneToken() = {
+    strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [poolString],[pmtpool])
+}
+}
