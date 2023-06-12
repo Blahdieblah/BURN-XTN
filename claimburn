@@ -1,0 +1,24 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let address = base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'
+
+let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let poolString = toBase58String(poolId)
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+
+@Callable(i)
+func ClaimBurn() = {
+        strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+        let xtnamount = assetBalance(Address(address), xtnId)
+        let xtnBurn = Burn(xtnId, xtnamount)
+        let burnxtnamount = assetBalance(Address(address), burnxtnId)
+        let burnxtnBurn = Burn(burnxtnId, burnxtnamount)
+    [
+    xtnBurn,
+    burnxtnBurn
+    ]
+    }
