@@ -1,0 +1,19 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let xtnString = toBase58String(xtnId)
+
+let xtnViresId = base58'3PCwFXSq8vj8iKitA5zrrLRbuqehfmimpce'
+let xtnVString = toBase58String(xtnViresId)
+
+let swapString = String(1234)
+
+@Callable(i)
+func vap() = {
+  let amount = 1000000 #657534247
+{strict withdraw2Inv = invoke(Address(base58'3P4uA5etnZi4AmBabKinq2bMiWU8KcnHZdH'), "withdraw2",[xtnVString,amount], [])}
+#adapt pool one token dApp
+{strict swapInv = invoke(Address(base58'3PGFHzVGT4NTigwCKP1NcwoXkodVZwvBuuU'), "swap",[swapString,amount], [xtnString,amount])}
+}}
