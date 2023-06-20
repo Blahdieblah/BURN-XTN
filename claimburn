@@ -2,23 +2,81 @@
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
 
-let address = base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'
+let master = base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let burnxtnString = toBase58String(burnxtnId)
+
+let westId = base58'4LHHvYGNKJUg5hj65aGD5vgScvCBmLpdRFtjokvCjSL8'
+let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
+let eggId = base58'C1iWsKGqLwjHUndiQ7iXpdmPum9PeCDFfyXBdJJosDRS'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+let nsbtId = base58'6nSpVyNH7yM69eg446wrQR94ipbbcmZMU1ENPwanC97g'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
+let wavesId = base58'WAVES'
 
 @Callable(i)
-func ClaimBurn() = {
-        strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
-        let xtnamount = assetBalance(Address(address), xtnId)
-        let xtnBurn = Burn(xtnId, xtnamount)
-        let burnxtnamount = assetBalance(Address(address), burnxtnId)
-        let burnxtnBurn = Burn(burnxtnId, burnxtnamount)
+func PoolGrowthStep1() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  let xtnBurn = Burn(xtnId, assetBalance(this, xtnId))
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
     [
+    scTxRefund,
     xtnBurn,
     burnxtnBurn
     ]
-    }
+}
+
+@Callable(i)
+func PoolGrowthStep2() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
+then wavesBalance(this).available - 10000000
+else 0)])
+  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
+  [scTxRefund]
+}
+
+@Callable(i)
+func PoolGrowthStep3() = if ((1000000000000000 > assetBalance(i.caller, burnxtnId)))
+    then throw("hold >10 million BURN-XTN")
+    else {
+  strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [poolString],[AttachedPayment(burnxtnId,assetBalance(this, burnxtnId))])
+  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
+  [scTxRefund]
+}
+
+@Callable(i)
+func PriceGrowth() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
+then wavesBalance(this).available - 10000000
+else 0)])
+  let xtnBurn = Burn(xtnId, assetBalance(this, xtnId))
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
+    [
+    scTxRefund,
+    xtnBurn,
+    burnxtnBurn
+    ]
+}
