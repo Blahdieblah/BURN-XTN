@@ -2,8 +2,6 @@
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
 
-let master = base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'
-
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
 
@@ -21,20 +19,22 @@ let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
 let wavesId = base58'WAVES'
 
 @Callable(i)
-func PoolGrowthStep1() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+func PoolGrowthStep1() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else{
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   let xtnBurn = Burn(xtnId, assetBalance(this, xtnId))
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
-  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
     [
-    scTxRefund,
     xtnBurn,
-    burnxtnBurn
+    burnxtnBurn,
+    BooleanEntry("PoolGrowthStep1", true)
     ]
 }
 
 @Callable(i)
-func PoolGrowthStep2() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+func PoolGrowthStep2() = 
+if(getBoolean("PoolGrowthStep1").isDefined() && getBoolean("PoolGrowthStep1").value()) != true then throw("do PoolGrowthStep1 first") else 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else{
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
   strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
@@ -45,21 +45,26 @@ func PoolGrowthStep2() = if assetBalance(i.caller, burnxtnId)<1000000000000000 t
   strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
 then wavesBalance(this).available - 10000000
 else 0)])
-  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
-  [scTxRefund]
+  [
+  BooleanEntry("PoolGrowthStep2", true)
+  ]
 }
 
 @Callable(i)
-func PoolGrowthStep3() = if ((1000000000000000 > assetBalance(i.caller, burnxtnId)))
-    then throw("hold >10 million BURN-XTN")
-    else {
+func PoolGrowthStep3() = 
+if(getBoolean("PoolGrowthStep2").isDefined() && getBoolean("PoolGrowthStep2").value()) != true then throw("do PoolGrowthStep2 first") else 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+{
   strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [poolString],[AttachedPayment(burnxtnId,assetBalance(this, burnxtnId))])
-  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
-  [scTxRefund]
+  [
+  BooleanEntry("PoolGrowthStep1", false),
+  BooleanEntry("PoolGrowthStep2", false)
+  ]
 }
 
 @Callable(i)
-func PriceGrowth() = if assetBalance(i.caller, burnxtnId)<1000000000000000 then throw("hold >10 million BURN-XTN") else{
+func PriceGrowth() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else{
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
@@ -73,9 +78,7 @@ then wavesBalance(this).available - 10000000
 else 0)])
   let xtnBurn = Burn(xtnId, assetBalance(this, xtnId))
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
-  let scTxRefund = ScriptTransfer(i.caller, 500000, unit)
     [
-    scTxRefund,
     xtnBurn,
     burnxtnBurn
     ]
