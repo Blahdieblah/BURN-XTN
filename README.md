@@ -1,5 +1,6 @@
 # BURN-XTN dApp can perform all project actions.
-https://waves-dapp.com/3PAucbbumdUXmhzcR421zGiayphEdo2tRoz
+Website: https://www.burnxtn.tech/
+dApp: https://waves-dapp.com/3PAucbbumdUXmhzcR421zGiayphEdo2tRoz
 
 Invocations callable by project owner or Puzzle master.
 All XTN and BURN-XTN trading fees are burned.
