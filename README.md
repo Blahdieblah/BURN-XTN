@@ -22,8 +22,10 @@ dApp is triggered every week manually, besides performing the above project acti
 dApp: https://waves-dapp.com/3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc
 
 Invocations callable by project owner or Puzzle master.
+
 Every function unstakes LP and transfers to Waves DAO wallet.
 
 unstakeTsunamiXTNvault
 Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
+
 Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
