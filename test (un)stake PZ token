@@ -1,0 +1,63 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let walletStr = "3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov"
+
+let burnxtnpoolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let burnxtnString = toBase58String(burnxtnpoolId)
+
+let burnxpptpoolId = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx' # = BURN-XTN x PepeTeam
+let burnxpptString = toBase58String(burnxpptpoolId)
+
+let burnxtn_pz_amount = getIntegerValue(Address(burnxtnpoolId), (walletStr + "_indexStaked"))
+let burnxppt_pz_amount = getIntegerValue(Address(burnxpptpoolId), (walletStr + "_indexStaked"))
+
+let PZ_burnxtn_id = base58'GdrDHazRGcCYeCgDEZzLpsZ3E7jmrxYB7EDUiGfiVAr1'
+let PZ_burnxtnppt_id = base58'2r5xCUHFLQVHKNC5k6qqRnDTT485KvKwAtbNtM2Wy4wW'
+
+let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+
+@Callable(i)
+func unstakeIndex_burnxtn() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+{
+strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
+[
+]
+}
+
+
+@Callable(i)
+func stake_burnxtn() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+{
+strict stakeIndex = invoke(Address(burnxtnpoolId), "stakeIndex", [], [AttachedPayment(PZ_burnxtn_id, assetBalance(this, PZ_burnxtn_id))])
+[
+]
+}
+
+
+@Callable(i)
+func unstakeIndex_burnxppt() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+{
+strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
+[
+]
+}
+
+@Callable(i)
+func stake_burnxppt() = 
+if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+{
+strict stakeIndex = invoke(Address(burnxpptpoolId), "stakeIndex", [], [AttachedPayment(PZ_burnxtnppt_id, assetBalance(this, PZ_burnxtnppt_id))])
+[
+]
+}
+
+
+
+     
