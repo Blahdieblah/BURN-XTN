@@ -44,8 +44,12 @@ let tvlpool = fraction(wavesinpool, 9, d8)
 
 let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial price BURN-XTN in wavelets")) - d8) / 1000000
 
-# Dear Puzzle master, invoke: FirstInvoke, if result is: PoolGrowthStep1, PoolGrowthStep2, IntegerEntry then do another invoke: PoolGrowthStep3
-# if result is: invoke PriceGrowth, then your done
+let puzzlemaster = Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')
+let cm1 = Address(base58'3PHFAavxj2ePJqFB46H2aRGA7oQL6kz1rJJ')
+let cm2 = Address(base58'3P3S2ugYddc7invK1FKwXkVehPpj6tjAJC7')
+
+# Dear Puzzle master and community members 1 & 2, in case of emergency: invoke function EmergencyActivateDAO
+# Then function PumpByDAO, can be called by anybody. This is tokenomics mode: burn XTN fees, buyback & burn BURN-XTN with the rest.
 
 @Callable(i)
 func FirstInvoke() = 
@@ -165,12 +169,16 @@ IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtn
 }
 
 @Callable(i)
-func EmergencyActivateDAO() = if (i.caller != this) then throw("access only by project owner") else{
+func EmergencyActivateDAO() = 
+if (i.caller != this && i.caller != puzzlemaster  && i.caller != cm1  && i.caller != cm2) 
+then throw("access only by project owner") else{
   [BooleanEntry("DAO", true)]
 }
 
 @Callable(i)
-func DeActivateDAO() = if (i.caller != this) then throw("access only by project owner") else{
+func DeActivateDAO() = 
+if (i.caller != this && i.caller != puzzlemaster  && i.caller != cm1  && i.caller != cm2) 
+then throw("access only by project owner") else{
   [BooleanEntry("DAO", false)]
 }
 
