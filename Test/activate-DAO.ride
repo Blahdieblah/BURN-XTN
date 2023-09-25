@@ -1,0 +1,209 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let d8 = 100000000
+
+let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let poolString = toBase58String(poolId)
+let pool2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let burnxtnString = toBase58String(burnxtnId)
+
+let westId = base58'4LHHvYGNKJUg5hj65aGD5vgScvCBmLpdRFtjokvCjSL8'
+let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
+let eggId = base58'C1iWsKGqLwjHUndiQ7iXpdmPum9PeCDFfyXBdJJosDRS'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+let nsbtId = base58'6nSpVyNH7yM69eg446wrQR94ipbbcmZMU1ENPwanC97g'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
+let wavesId = base58'WAVES'
+let usdterc = base58'9wc3LXNA4TEBsXyKtoLE9mrbDD7WMHXvXrCjZvabLAsi'
+let usdcerc = base58'HGgabTqUS8WtVFUJzfmrTDMgEccJuZLBPhFgQFxvnsoW'
+let usdtbsc = base58'A81p1LTRyoq2rDR2TNxB2dWYxsiNwCSSi8sXef2SEkwb'
+let usdcbsc = base58'4BKKSp6NoNcrFHyorZogDyctq1fq6w7114Ym1pw6HUtC'
+
+let burnxtnbalance = assetBalance(Address(poolId), burnxtnId)
+let wavesbalance = wavesBalance(Address(poolId)).regular
+let burnxtnwavesprice = fraction(d8, wavesbalance * 11, burnxtnbalance)
+
+let burnxtnbalance2 = assetBalance(Address(pool2), burnxtnId)
+let usdbalance = (assetBalance(Address(pool2), usdterc) + assetBalance(Address(pool2), usdcerc) + assetBalance(Address(pool2), usdtbsc) + assetBalance(Address(pool2), usdcbsc)) / 4
+let burnxtnusdprice = fraction(d8, usdbalance, burnxtnbalance2) 
+
+let ATH = if burnxtnwavesprice > getIntegerValue("ATH in wavelets") then burnxtnwavesprice else getIntegerValue(this, "ATH in wavelets")
+let ATHusd = if burnxtnusdprice > getIntegerValue("ATH in centlets") then burnxtnusdprice else getIntegerValue(this, "ATH in centlets")
+
+let wavesinpool = getIntegerValue(Address(poolId), ("global_" + toBase58String(wavesId)) + "_balance")
+let projectstake = getIntegerValue(Address(poolId), ("3PAucbbumdUXmhzcR421zGiayphEdo2tRoz" + "_indexStaked"))
+let totalstake = getIntegerValue(Address(poolId), ("global_poolToken_amount"))
+let tvlinwaves = fraction(fraction(wavesinpool, projectstake, totalstake), 9, d8)
+let tvlpool = fraction(wavesinpool, 9, d8)
+
+let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial price BURN-XTN in wavelets")) - d8) / 1000000
+
+# Dear Puzzle master, invoke: FirstInvoke, if result is: PoolGrowthStep1, PoolGrowthStep2, IntegerEntry then do another invoke: PoolGrowthStep3
+# if result is: invoke PriceGrowth, then your done
+
+@Callable(i)
+func FirstInvoke() = 
+if (i.caller != this) then throw("access only by project owner") else{
+  strict PoolGrowthStep1 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep1", [], []) else unit 
+  strict PoolGrowthStep2 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep2", [], []) else unit
+  strict PriceGrowth = if (burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then invoke(this, "Pump", [], []) else unit
+  strict dEntry = invoke(this, "dEntry", [], [])
+  []}
+
+@Callable(i)
+func dEntry() =
+if (i.caller != this) then throw("access only by project owner") else{
+[
+IntegerEntry("BURN-XTN / WAVES price in wavelets", burnxtnwavesprice),
+IntegerEntry("Price growth %", pricegrowth),
+IntegerEntry("ATH in wavelets", ATH),
+IntegerEntry("BURN-XTN / USD price in centlets", burnxtnusdprice),
+IntegerEntry("ATH in centlets", ATHusd),
+IntegerEntry("TVL project in WAVES excluding BURN-XTN", tvlinwaves),
+IntegerEntry("TVL pool in WAVES excluding BURN-XTN", tvlpool)
+]
+}
+
+@Callable(i)
+func PoolGrowthStep1() = 
+if (i.caller != this) then throw("access only by project owner") else if
+(burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then throw("price is below ATH") else
+{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnburnamount)
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+    [
+    xtnBurn,
+    burnxtnBurn,
+    BooleanEntry("PoolGrowthStep1", true),
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    ]
+}
+
+@Callable(i)
+func PoolGrowthStep2() = 
+if(getBoolean("PoolGrowthStep1").isDefined() && getBoolean("PoolGrowthStep1").value()) != true then throw("do PoolGrowthStep1 first") else 
+if (i.caller != this) then throw("access only by project owner") else if
+(burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then throw("price is below ATH") else{
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
+then wavesBalance(this).available - 10000000
+else 0)])
+  [
+  BooleanEntry("PoolGrowthStep2", true)
+  ]
+}
+
+@Callable(i)
+func PoolGrowthStep3() = 
+if(getBoolean("PoolGrowthStep2").isDefined() && getBoolean("PoolGrowthStep2").value()) != true then throw("do PoolGrowthStep2 first") else 
+if (i.caller != this) then throw("access only by project owner") else
+{
+  strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [poolString],[AttachedPayment(burnxtnId,assetBalance(this, burnxtnId))])
+  [
+  BooleanEntry("PoolGrowthStep1", false),
+  BooleanEntry("PoolGrowthStep2", false),
+  IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+  IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+})
+    ]
+}
+
+@Callable(i)
+func Pump() = 
+if (i.caller != this) then throw("access only by project owner") else if
+(burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then throw("price is at/above ATH") else{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
+then wavesBalance(this).available - 10000000
+else 0)])
+  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnburnamount)
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+    [
+    xtnBurn,
+    burnxtnBurn,
+    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    ]
+}
+
+@Callable(i)
+func EmergencyActivateDAO() = if (i.caller != this) then throw("access only by project owner") else{
+  [BooleanEntry("DAO", true)]
+}
+
+@Callable(i)
+func DeActivateDAO() = if (i.caller != this) then throw("access only by project owner") else{
+  [BooleanEntry("DAO", false)]
+}
+
+@Callable(i)
+func PumpByDAO() = 
+if getBooleanValue(this, "DAO") != true then throw("first invoke function: EmergencyActivateDAO") else{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
+then wavesBalance(this).available - 10000000
+else 0)])
+  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnburnamount)
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+    [
+    xtnBurn,
+    burnxtnBurn,
+    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    ]
+}
