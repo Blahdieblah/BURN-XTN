@@ -1,6 +1,8 @@
 {-# STDLIB_VERSION 6 #-}
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
 
 let burnxtnpoolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let burnxtnString = toBase58String(burnxtnpoolId)
@@ -20,7 +22,7 @@ let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 
 @Callable(i)
 func unstakeIndex_burnxtn() = 
-if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
 [
@@ -30,7 +32,7 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id
 
 @Callable(i)
 func unstakeIndex_burnxppt() = 
-if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
 [
@@ -41,11 +43,45 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtn
  @Callable(i)
 func unstakeTsunamiXTNvault(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
-#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if (i.caller != this && i.caller != Address(base58'3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf')) then throw("access only by project owner or Puzzle master") else
+#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the max withdrawable amount
+if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
 [
 ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
 ]
 }       
+
+# If func dEntry of dApp: 3PAucbbumdUXmhzcR421zGiayphEdo2tRoz is not invoked in 30 days by wallet owner, then functions _byAnybody, can be called by anybody.
+
+@Callable(i)
+func unstakeIndex_burnxtn_byAnybody() = 
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
+[
+ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id)
+]
+}
+
+@Callable(i)
+func unstakeIndex_burnxppt_byAnybody() = 
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
+[
+ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id)
+]
+}
+
+ @Callable(i)
+func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
+#Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
+#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
+[
+ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
+]
+}  
