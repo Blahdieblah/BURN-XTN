@@ -42,8 +42,8 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtn
 
 # If func dEntry of dApp: 3PAucbbumdUXmhzcR421zGiayphEdo2tRoz is not invoked in 30 days by wallet owner, then functions _byAnybody, can be called by anybody.
 @Callable(i)
-func unstakeIndex_burnxtn_byWavesDAO() = 
-if (i.caller != wavesdaoaddress && height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440) then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+func unstakeIndex_burnxtn_byAnybody() = 
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
 [
@@ -52,8 +52,8 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id
 }
 
 @Callable(i)
-func unstakeIndex_burnxppt_byWavesDAO() = 
-if (i.caller != wavesdaoaddress && height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440) then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+func unstakeIndex_burnxppt_byAnybody() = 
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
 [
@@ -62,10 +62,10 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtn
 }
 
 @Callable(i)
-func unstakeTsunamiXTNvault_byWavesDAO(amount:Int) = 
+func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
 #Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if (i.caller != wavesdaoaddress && height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440) then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
 [
@@ -74,10 +74,10 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
 }
 
 @Callable(i)
-func unstakeTsunamiWAVESvault_byWavesDAO(amount:Int) = 
+func unstakeTsunamiWAVESvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd 
 #Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if (i.caller != wavesdaoaddress && height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440) then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstake = invoke(Address(base58'3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd'), "unStake", [amount], [])
 [
