@@ -19,6 +19,7 @@ let PZ_burnxtnppt_id = base58'2r5xCUHFLQVHKNC5k6qqRnDTT485KvKwAtbNtM2Wy4wW'
 let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 
 @Callable(i)
 func unstakeIndex_burnxtn() = 
@@ -61,26 +62,33 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtn
 ]
 }
 
-@Callable(i)
-func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
+#@Callable(i)
+#func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
 #Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
-]
-}
+#if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+#{strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
+#[ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)]}
 
-@Callable(i)
-func unstakeTsunamiWAVESvault_byAnybody(amount:Int) = 
+#@Callable(i)
+#func unstakeTsunamiWAVESvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd 
 #Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
+#if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+#{
+#strict unstake = invoke(Address(base58'3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd'), "unStake", [amount], [])
+#[
+#ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit)
+#]
+#}
+
+@Callable(i)
+func returnAssets_byAnybody(amount:Int) = 
 if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
-strict unstake = invoke(Address(base58'3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd'), "unStake", [amount], [])
 [
-ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit)
+ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit),
+ScriptTransfer(wavesdaoaddress, assetBalance(this, swaves), swaves),
+ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
 ]
 }
