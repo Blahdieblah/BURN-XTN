@@ -27,13 +27,3 @@ dApp: https://waves-dapp.com/3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc
 Every function unstakes LP and transfers to Waves DAO wallet.
 
 If the project actions dApp is not activated for 30 days, then functions: _byAnybody, can be called by anybody.
-
-unstakeTsunamiXTNvault
-Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
-
-Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the max withdrawable amount
-
-unstakeTsunamiWAVESvault
-Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd 
-
-Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the max withdrawable amount
