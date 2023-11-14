@@ -1,0 +1,65 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let d8 = 100000000
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+
+let WXvote = Address(base58'3PCZbz9o5YfWtK36j3tFcM8E1DUa9d7MyXS')
+let epoch = getIntegerValue(WXvote, "%s__currentEpoch")
+let epochPrevious = (epoch - 1)
+
+let addresses = dropRight(tryGetString(this, "Address registered"), 1)
+
+@Callable(i)
+func register()= 
+if (contains(tryGetString(this, "Address registered"), toString(i.caller))) then throw("already registered") else
+if (tryGetInteger(this, "Amount Registered") == 100) then throw("registration closed") else
+{
+  [
+    IntegerEntry("Amount Registered", tryGetInteger(this, "Amount Registered") + 1),
+    StringEntry("Register address: " + toString((tryGetInteger(this, "Amount Registered") +1)), toString(i.caller)),
+    StringEntry("Address registered", (tryGetString(this, "Address registered") + toString(i.caller) + ","))
+  ]
+} 
+
+@Callable(i)
+func countVotes()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split(addresses, ",")
+    func v(accum:List[IntegerEntry], address:String)= 
+    {accum ++ [IntegerEntry(address, tryGetInteger(WXvote, "%s%s%s%s%d__vote__3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns__WAVES__" + address + "__" + toString(epochPrevious)))]}
+    let votesCountInt = {FOLD<100>(list, nil, v)}
+    [] ++ votesCountInt
+}
+
+@Callable(i)
+func payVoters()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let assetId = whirlpool
+    let amount = 1 * d8
+
+    let list = split(addresses, ",")
+    func f(accum:List[ScriptTransfer], address:String)= 
+    accum ++ [ScriptTransfer(addressFromStringValue(address), 
+        fraction(tryGetInteger(this, address), amount, tryGetInteger(WXvote, "%s%s%s%d__votingResult__3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns__WAVES__" + toString(epochPrevious))),
+        assetId)]
+    FOLD<100>(list, nil, f)
+}
