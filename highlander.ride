@@ -1,0 +1,282 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let d6 = 1000000
+let d8 = 100000000
+
+let registrationClosed = getIntegerValue("registration last block") # height > registrationClosed = registration Closed
+let registrationRequirement = getIntegerValue("registration requirement") * d8 # totalBalance2 < registrationRequirement = throw
+let rewardAssetId = getStringValue("reward asset id")
+let rewardAmount = getIntegerValue("reward amount")
+let minimumIncrease = getIntegerValue("minimum increase") * d8
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+
+let PZ1 = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let PZ2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
+let PZ3 = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi'
+let PZ4 = base58'3PDJPGn6vBEBqWN4E3fNcxoKBoDXbsmoaM7'
+let PZ5 = base58'3PCS1xhGQi2eM5mYcCBhUSHvB31Kk5gZoCm'
+let PZ6 = base58'3P8Quvmgt3VEWAjBR3bsfgCqzUh7zTmTC4q'
+
+let WXstake = base58'3PPNhHYkkEy13gRWDCaruQyhNbX2GrjYSyV'
+let WX1 = base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5'
+let LP1 = "GyiHdcN59sZ46baFvj68ruLngrTPEvWDtsd6jHm4o46n"
+let WX2 = base58'3PKXseWa31VUSWUvm2YiRKxW2VM9RsVk3ry'
+let LP2 = "3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z"
+
+let addresses = if (getBoolean(this, "started") == true) then (tryGetString(this, "filter")) 
+    else (dropRight(tryGetString(this, "Address registered"), 1))
+
+func PZbal(Pooladdress:ByteVector, address:Address) = {
+    let burnxtnInPZ = tryGetInteger(Address(Pooladdress), ("global_" + toBase58String(burnxtn)) + "_balance")
+    let addressStakePZ = tryGetInteger(Address(Pooladdress), (toString(address) + "_indexStaked"))
+    let totalStakePZ = tryGetInteger(Address(Pooladdress), ("global_poolToken_amount"))
+    fraction(burnxtnInPZ, addressStakePZ, totalStakePZ)
+}
+
+func WXbal(Pooladdress:ByteVector, address:Address, LPstr:String) = {
+    let burnxtnInWX = assetBalance(Address(Pooladdress), burnxtn)
+    let addressStakeWX = tryGetInteger(Address(WXstake), "%s%s%s__staked__" + toString(address) + "__" + LPstr)
+    let totalStakeWX = tryGetInteger(Address(WXstake), "%s%s%s__staked__total__" + LPstr)
+    fraction(burnxtnInWX, addressStakeWX, totalStakeWX)
+}
+
+func totalBalance(address:Address) = {
+    let burnxtnBalance = assetBalance(address, burnxtn)
+    let PZ1balance = PZbal(PZ1, address)
+    let PZ2balance = PZbal(PZ2, address)
+    let PZ3balance = PZbal(PZ3, address)
+    let PZ4balance = PZbal(PZ4, address)
+    let PZ5balance = PZbal(PZ5, address)
+    let PZ6balance = PZbal(PZ6, address)
+    let WX1balance = WXbal(WX1, address, LP1)
+    let WX2balance = WXbal(WX2, address, LP2)
+    let total = burnxtnBalance + PZ1balance + PZ2balance + PZ3balance + PZ4balance + PZ5balance + PZ6balance + WX1balance + WX2balance
+    [
+    IntegerEntry("burnxtnBalance", burnxtnBalance),
+    IntegerEntry("PZ1balance", PZ1balance),
+    IntegerEntry("PZ2balance", PZ2balance),
+    IntegerEntry("PZ3balance", PZ3balance),
+    IntegerEntry("PZ4balance", PZ4balance),
+    IntegerEntry("PZ5balance", PZ5balance),
+    IntegerEntry("PZ6balance", PZ6balance),
+    IntegerEntry("WX1balance", WX1balance),
+    IntegerEntry("WX2balance", WX2balance),
+    IntegerEntry("total", total)
+    ]
+}
+
+func totalBalance2(address:Address) = {
+    let burnxtnBalance = assetBalance(address, burnxtn)
+    let PZ1balance = PZbal(PZ1, address)
+    let PZ2balance = PZbal(PZ2, address)
+    let PZ3balance = PZbal(PZ3, address)
+    let PZ4balance = PZbal(PZ4, address)
+    let PZ5balance = PZbal(PZ5, address)
+    let PZ6balance = PZbal(PZ6, address)
+    let WX1balance = WXbal(WX1, address, LP1)
+    let WX2balance = WXbal(WX2, address, LP2)
+    burnxtnBalance + PZ1balance + PZ2balance + PZ3balance + PZ4balance + PZ5balance + PZ6balance + WX1balance + WX2balance
+}
+
+@Callable(i)
+func register()= 
+if (contains(tryGetString(this, "Address registered"), toString(i.caller))) then throw("already registered") else
+if (height > registrationClosed) then throw("registration closed") else
+if (totalBalance2(i.caller) < registrationRequirement) then throw("have atleast 40k BURN-XTN in wallet and/or liquidity pools") else
+if (tryGetInteger(this, "Amount Registered") == 100) then throw("registration closed") else
+{
+  [
+    IntegerEntry("Amount Registered", tryGetInteger(this, "Amount Registered") + 1),
+    StringEntry("Register address: " + toString((tryGetInteger(this, "Amount Registered") +1)), toString(i.caller)),
+    StringEntry("Address registered", (tryGetString(this, "Address registered") + toString(i.caller) + ","))
+  ] ++ totalBalance(i.caller)
+}
+
+@Callable(i)
+func start()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split(addresses, ",")
+    func bal (accum:List[IntegerEntry], address:String)= 
+    {accum ++ [IntegerEntry(address, totalBalance2(addressFromStringValue(address)))]}
+    let enterIntegers = {FOLD<100>(list, nil, bal)}
+    [] ++ enterIntegers
+}
+
+@Callable(i)
+func currentPosition()= {
+    let list = split(addresses, ",")
+    func dif (accum:List[IntegerEntry], address:String)= 
+    {accum ++ [IntegerEntry("increase " + address, 
+    (totalBalance2(addressFromStringValue(address)) - tryGetInteger(this, address))/d8)]}
+    let enterDif = {FOLD<98>(list, nil, dif)}
+    [] ++ enterDif
+}
+
+@Callable(i)
+func stopIncrease()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split(addresses, ",")
+    func dif (accum:List[IntegerEntry], address:String)= 
+    {accum ++ [IntegerEntry("stop increase" + address, (totalBalance2(addressFromStringValue(address)) - tryGetInteger(this, address)))]}
+    let enterDif = {FOLD<100>(list, nil, dif)}
+    [] ++ enterDif
+}
+
+@Callable(i)
+func winners()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    strict filter = invoke(this, "filter", [], [])
+
+    let list = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+    func r(accum:List[Int], iterations:Int)=
+    {invoke(this, "remove", [iterations], [])}
+    strict remove = {FOLD<20>(list, [], r)}
+    [BooleanEntry("started", true)]
+}
+
+@Callable(i)
+func filter()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split(addresses, ",")
+    func fList(accum:List[String], address:String)= 
+    if ((tryGetInteger(this, ("stop increase" + address)) < minimumIncrease)) then accum else
+    {accum :+ address}
+    let filterList = {FOLD<100>(list, [], fList)}
+    
+    let filterListString = makeString(filterList, ",")
+    let filterListSize = size(filterList)
+    let cullSize = fraction(filterListSize, 80, 100, DOWN)
+    [
+    StringEntry("filter", filterListString),
+    IntegerEntry("list size filterList", filterListSize),
+    IntegerEntry("cullSize", cullSize)
+    ]
+}
+
+@Callable(i)
+func remove(iterations:Int)=
+if (i.caller != this) then throw("access only by project owner") else{
+    if (getIntegerValue("list size filterList") <= 
+    if getBoolean("final") == true then 1 
+        else getIntegerValue("cullSize")) then [] else 
+    let list = split(getStringValue("filter"), ",")
+    func bal(accum:List[Int], address:String)=
+    {accum :+ (tryGetInteger(this, ("stop increase" + address)))}
+    let balList = {FOLD<100>(list, [], bal)}
+
+    let lowest = value(min(balList))
+    let indexLowest = value(indexOf(balList, lowest))
+    let minusLowestList = removeByIndex(list, indexLowest)
+    let minusLowestListSize = size(minusLowestList)
+    let minusLowestString = makeString(minusLowestList, ",")
+    [
+    IntegerEntry("list size filterList", minusLowestListSize),
+    StringEntry("filter", minusLowestString)
+    ]
+}
+
+@Callable(i)
+func payWinners()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let assetId = whirlpool
+    let amount = rewardAmount * d8
+    let list = split(addresses, ",")
+    func bal(accum:List[Int], address:String)=
+    {accum :+ (tryGetInteger(this, ("stop increase" + address)))}
+    let balList = {FOLD<100>(list, [], bal)}
+
+    let highest = value(max(balList))
+    let indexHighest = value(indexOf(balList, highest))
+    let highestAddress = getElement(list, indexHighest)
+    let winnersTopx2 = cons(highestAddress, list)
+    
+    let amountPerAddress = (amount / (size(list) +1))
+    func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), amountPerAddress, assetId)]
+    FOLD<80>(winnersTopx2, nil, f)
+}
+
+@Callable(i)
+func payROME(bonusAmount:Int)= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let assetId = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
+    let amount = bonusAmount * d6
+    let list = split(addresses, ",")
+    func bal(accum:List[Int], address:String)=
+    {accum :+ (tryGetInteger(this, ("stop increase" + address)))}
+    let balList = {FOLD<100>(list, [], bal)}
+
+    let highest = value(max(balList))
+    let indexHighest = value(indexOf(balList, highest))
+    let highestAddress = getElement(list, indexHighest)
+    let winnersTopx2 = cons(highestAddress, list)
+    
+    let amountPerAddress = (amount / (size(list) +1))
+    func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), amountPerAddress, assetId)]
+    FOLD<80>(winnersTopx2, nil, f)
+}
+
+@Callable(i)
+func payRegistrants()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let assetId = fromBase58String(rewardAssetId)
+    let amount = rewardAmount * d8
+
+    let list = split(addresses, ",")
+    let amountPerAddress = (amount / size(list))
+    func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), amountPerAddress, assetId)]
+    FOLD<100>(list, nil, f)
+}
+
+@Callable(i)
+func restart()=
+if (i.caller != this) then throw("access only by project owner") else{
+    [BooleanEntry("started", false)]
+}
+
+@Callable(i)
+func final(finalRound:Boolean)=
+if (i.caller != this) then throw("access only by project owner") else{
+    [BooleanEntry("final", finalRound)]
+}
+
+@Callable(i)
+func requirements(rewardAssetId:String, rewardAmount:Int, registrationLastBlock:Int, registrationRequirement:Int, minimumIncrease:Int)=
+if (i.caller != this) then throw("access only by project owner") else{
+    [
+    StringEntry("reward asset id", rewardAssetId),
+    IntegerEntry("reward amount", rewardAmount),
+    IntegerEntry("registration last block", registrationLastBlock),
+    IntegerEntry("registration requirement", registrationRequirement),
+    IntegerEntry("minimum increase", minimumIncrease)
+    ]
+}
+
+@Callable(i)
+func check(address:String)={
+    let intStopIncrease = tryGetInteger(this, ("stop increase" + address))
+    let minimum = minimumIncrease
+    [
+    IntegerEntry("intStopIncrease", intStopIncrease),
+    IntegerEntry("minimum", minimum),
+    BooleanEntry("is nil?", (tryGetInteger(this, ("stop increase" + address)) < minimumIncrease))
+    ]
+}
