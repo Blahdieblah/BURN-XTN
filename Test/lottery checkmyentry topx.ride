@@ -1,0 +1,42 @@
+@Callable(i)
+func checkTopX()=
+if (i.caller != this) then throw("access only by project owner") else{
+    strict a = invoke(this, "listHodl", [], [])
+
+    #fold function 50x
+    strict b = invoke(this, "topXhighToLow", [], [])
+
+    let list = dropRight(tryGetString(this, "high to low"), 1)
+    #let index = containsElement(list, toString(totalBalance(i.caller)))
+    []
+    }
+
+@Callable(i)
+func listHodl()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    let list = split(addresses, ",")
+    func p(accum:List[String], address:String)=
+    if (assetBalance(addressFromStringValue(address), burnxtn) < (tryGetInteger(this, address) + minimumIncrease)) then accum else
+    {accum :+ address}
+    let participantsList = {FOLD<100>(list, nil, p)}
+    let participantsListString = makeString(participantsList, ",")
+    [StringEntry("topX", participantsListString)]
+}
+
+@Callable(i)
+func topXhighToLow(iterations:Int)=
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split(getStringValue("topX"), ",")
+    if size(list) <= 90 then [] else 
+    func bal(accum:List[Int], address:String)=
+    {accum :+ totalBalance(addressFromStringValue(address))}
+    let balList = {FOLD<100>(list, [], bal)}
+
+    let highest = value(max(balList))
+    let indexHighest = value(indexOf(balList, highest))
+    let minusHighestList = removeByIndex(list, indexHighest)
+    let minusHighestString = makeString(minusHighestList, ",")
+    [StringEntry("high to low", (tryGetString(this, "high to low") + toString(highest) + ",")),
+    StringEntry("topX", minusHighestString)]
+}
