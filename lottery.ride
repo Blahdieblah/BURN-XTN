@@ -119,8 +119,6 @@ func register()=
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
 if tryGetInteger(this, keyAmountRegistered) >= 90 then throw("max registered users") else
 {
-    let pmt = i.payments[0].value()
-    if (pmt.amount > 0) then throw("no payment required") else
   [
     IntegerEntry(keyAmountRegistered, tryGetInteger(this, keyAmountRegistered) + 1),
     StringEntry("Register address: " + toString((tryGetInteger(this, keyAmountRegistered) +1)), toString(i.caller)),
@@ -133,8 +131,6 @@ if tryGetInteger(this, keyAmountRegistered) >= 90 then throw("max registered use
 func checkMyEntry()=
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) == false then throw("not yet registered") else
 {
-    let pmt = i.payments[0].value()
-    if (pmt.amount > 0) then throw("no payment required") else
     [
     BooleanEntry("HODL+1", assetBalance((i.caller), burnxtn) >= (tryGetInteger(this, toString(i.caller)) + minimumIncrease)),
     IntegerEntry("highest recorded BURN-XTN balance by lottery", tryGetInteger(this, toString(i.caller)) / d8),
