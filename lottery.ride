@@ -17,15 +17,15 @@ func tryGetString (address:Address, key:String) = match getString(address, key) 
         ""
 }
 
+let d6 = 1000000
 let d8 = 100000000
 
-let minimumIncrease = 1 * d8
+let minimumIncrease = d8
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
 let pool2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
-#let matcher = Address(base58'3PEjHv3JGjcWNpYEEkif2w8NXV4kbhnoGgu')
-let matcher = Address(base58'3MqEAEVk1NcbRAuEPAX7nyzUqMHbhvRofez')
+let matcher = Address(base58'3PEjHv3JGjcWNpYEEkif2w8NXV4kbhnoGgu')
 
 let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
 let xtn = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
@@ -44,6 +44,9 @@ let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
 let keyAddressesRegistered = "Addresses registered"
 let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
 let keyAmountRegistered = "Amount Registered"
+let keyParticipants = "participants list string"
+let keyTotalBalanceCount = "total balance count"
+let keyTotalBalanceJackpotCount = "total balance jackpot count"
 
 func rand(i:Invocation)= 
   i.transactionId 
@@ -70,8 +73,8 @@ let LP2 = "3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z"
 
 let PZw1 = base58'3P2myTbd5zpEHcYmNpdWTp5gXS5B8tL1RCY'
 
-func PZbal(Pooladdress:ByteVector, address:Address) = {
-    let burnxtnInPZ = tryGetInteger(Address(Pooladdress), ("global_" + toBase58String(burnxtn)) + "_balance")
+func PZbal(Pooladdress:ByteVector, address:Address, asset:ByteVector) = {
+    let burnxtnInPZ = tryGetInteger(Address(Pooladdress), ("global_" + toBase58String(asset)) + "_balance")
     let addressStakePZ = tryGetInteger(Address(Pooladdress), (toString(address) + "_indexStaked"))
     let totalStakePZ = tryGetInteger(Address(Pooladdress), ("global_poolToken_amount"))
     fraction(burnxtnInPZ, addressStakePZ, totalStakePZ)
@@ -93,12 +96,12 @@ func burnxtnBalance(i:Invocation)= assetBalance(i.caller, burnxtn)
 
 func totalBalance(address:Address)= {
     let burnxtnBalance2 = assetBalance(address, burnxtn)
-    let PZ1balance = PZbal(PZ1, address)
-    let PZ2balance = PZbal(PZ2, address)
-    let PZ3balance = PZbal(PZ3, address)
-    let PZ4balance = PZbal(PZ4, address)
-    let PZ5balance = PZbal(PZ5, address)
-    let PZ6balance = PZbal(PZ6, address)
+    let PZ1balance = PZbal(PZ1, address, burnxtn)
+    let PZ2balance = PZbal(PZ2, address, burnxtn)
+    let PZ3balance = PZbal(PZ3, address, burnxtn)
+    let PZ4balance = PZbal(PZ4, address, burnxtn)
+    let PZ5balance = PZbal(PZ5, address, burnxtn)
+    let PZ6balance = PZbal(PZ6, address, burnxtn)
     let WX1balance = WXbal(WX1, address, LP1)
     let WX2balance = WXbal(WX2, address, LP2)
     burnxtnBalance2 + PZ1balance + PZ2balance + PZ3balance + PZ4balance + PZ5balance + PZ6balance + WX1balance + WX2balance
@@ -106,15 +109,18 @@ func totalBalance(address:Address)= {
 
 func totalWhirlpoolBalance(address:Address)= {
     let whirlpoolBalance = assetBalance(address, whirlpool)
-    let PZw1balance = PZbal(PZw1, address)
+    let PZw1balance = PZbal(PZw1, address, whirlpool)
     whirlpoolBalance + PZw1balance
 }
 
 @Callable(i)
 func register()= 
-if (contains(tryGetString(this, "Address registered"), toString(i.caller))) then throw("already registered") else
-if i.payments[0].value().amount > 0 then throw("no payment required") else
+
+if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
+if tryGetInteger(this, keyAmountRegistered) >= 90 then throw("max registered users") else
 {
+    let pmt = i.payments[0].value()
+    if (pmt.amount > 0) then throw("no payment required") else
   [
     IntegerEntry(keyAmountRegistered, tryGetInteger(this, keyAmountRegistered) + 1),
     StringEntry("Register address: " + toString((tryGetInteger(this, keyAmountRegistered) +1)), toString(i.caller)),
@@ -125,33 +131,60 @@ if i.payments[0].value().amount > 0 then throw("no payment required") else
 
 @Callable(i)
 func checkMyEntry()=
-if (contains(tryGetString(this, "Address registered"), toString(i.caller))) == false then throw("not yet registered") else
+if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) == false then throw("not yet registered") else
 {
+    let pmt = i.payments[0].value()
+    if (pmt.amount > 0) then throw("no payment required") else
     [
-    BooleanEntry("eligible for lottery", assetBalance((i.caller), burnxtn) < (tryGetInteger(this, toString(i.caller)) + minimumIncrease)),
-    IntegerEntry("highest recorded BURN-XTN balance by lottery", tryGetInteger(this, toString(i.caller))),
-    IntegerEntry("current BURN-XTN balance", burnxtnBalance(i)),
-    IntegerEntry("required BURN-XTN balance", tryGetInteger(this, toString(i.caller)) + minimumIncrease),
-    IntegerEntry("current total BURN-XTN balance including liquidity pools", totalBalance(i.caller)),
-    IntegerEntry("win amount guaranteed prize increased for holding WHIRLPOOL", totalWhirlpoolBalance(i.caller)),
-    # NFT
-    IntegerEntry("win amount jackpot increased for holding WHIRLPOOL", totalWhirlpoolBalance(i.caller) * 10)
-    # NFT
+    BooleanEntry("HODL+1", assetBalance((i.caller), burnxtn) >= (tryGetInteger(this, toString(i.caller)) + minimumIncrease)),
+    IntegerEntry("highest recorded BURN-XTN balance by lottery", tryGetInteger(this, toString(i.caller)) / d8),
+    IntegerEntry("current BURN-XTN balance", burnxtnBalance(i) / d8),
+    IntegerEntry("required BURN-XTN balance", (tryGetInteger(this, toString(i.caller)) + minimumIncrease) / d8),
+    IntegerEntry("entries = total BURN-XTN balance incl liquidity pools", totalBalance(i.caller) / d8)
     ]
 } 
 
 @Callable(i)
-func totalBalanceEntry()=
+func step_1()=
 if (i.caller != this) then throw("access only by project owner") else
-if getBooleanValue(this, "reset") == false then throw("reset first") else
 {
-    let list = split(addresses, ",")
-    func bal(accum:List[IntegerEntry], address:String)=
-    if (assetBalance(addressFromStringValue(address), burnxtn) < (tryGetInteger(this, address) + minimumIncrease)) then accum else
-    {accum :+ [IntegerEntry("total balance" + address, totalBalance(addressFromStringValue(address)))]}
-    let enterTotalBalance = {FOLD<100>(list, nil, bal)}
-    [] ++ enterTotalBalance
+    strict r = invoke(this, "reset", [], []) #4
+    strict p = invoke(this, "participants", [], []) #1
+    strict u = invoke(this, "updateBalanceEntry", [], []) #95 
+    []
 }
+
+@Callable(i)
+func step_2()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict tba = invoke(this, "totalBalanceAll", [], []) #1
+    strict tbwa = invoke(this, "totalBalanceWhirlpoolAll", [], []) #1
+    strict w = invoke(this, "winner", [], []) # 4
+    strict in = invoke(this, "invoker", [], []) # up to 93 addresses
+    []
+}
+
+@Callable(i)
+func step_3()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict p = invoke(this, "payWinner", [], []) #47
+    strict j = invoke(this, "jackpot", [], []) #5
+    if getBooleanValue("jackpot") == false then [] else 
+    strict w = invoke(this, "winnerJackpot", [], []) # 4
+    []
+}
+
+@Callable(i)
+func step_4()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict ji = invoke(this, "jackpotInvoker", [], []) # up to 99 addresses
+    strict pj = invoke(this, "payJackpot", [], [])
+    []
+}
+
 
 @Callable(i)
 func participants()=
@@ -162,9 +195,24 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
     func p(accum:List[String], address:String)=
     if (assetBalance(addressFromStringValue(address), burnxtn) < (tryGetInteger(this, address) + minimumIncrease)) then accum else
     {accum :+ address}
-    let participantsList = {FOLD<100>(list, nil, p)}
+    let participantsList = {FOLD<1000>(list, nil, p)}
     let participantsListString = makeString(participantsList, ",")
-    [StringEntry("participants list string", participantsListString)]
+    [
+    StringEntry(keyParticipants, participantsListString),
+    IntegerEntry("list size", size(participantsList))
+    ]
+}
+
+@Callable(i)
+func updateBalanceEntry()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+    let list = split(tryGetString(this, keyParticipants), ",")
+    func bal(accum:List[IntegerEntry], address:String)=
+    {accum ++ [IntegerEntry(address, assetBalance(addressFromStringValue(address), burnxtn))]}
+    let updateBalance = {FOLD<100>(list, nil, bal)}
+    [] ++ updateBalance
 }
 
 @Callable(i)
@@ -172,11 +220,23 @@ func totalBalanceAll()=
 if (i.caller != this) then throw("access only by project owner") else
 if getBooleanValue(this, "reset") == false then throw("reset first") else
 {
-    let list = split(dropRight(tryGetString(this, "participants list string"), 1), ",")
+    let list = split(tryGetString(this, keyParticipants), ",")
     func ba(accum:Int, address:String)=
     {accum + totalBalance(addressFromStringValue(address))}
     let enterTotalBalanceAll = {FOLD<100>(list, 0, ba)}
     [IntegerEntry("total balance all", enterTotalBalanceAll)]
+}
+
+@Callable(i)
+func totalBalanceWhirlpoolAll()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+    let list = split(tryGetString(this, keyParticipants), ",")
+    func ba(accum:Int, address:String)=
+    {accum + totalWhirlpoolBalance(addressFromStringValue(address))}
+    let enterTotalBalanceAll = {FOLD<100>(list, 0, ba)}
+    [IntegerEntry("total balance Whirlpool all", enterTotalBalanceAll)]
 }
 
 @Callable(i)
@@ -192,14 +252,14 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
   BinaryEntry("rand winner", rand(i)),
   BinaryEntry("randhash winner", randHash),
   IntegerEntry("randhash int winner", result),
-  IntegerEntry("result remainder winner", result % getIntegerValue("total balance all"))
+  IntegerEntry("result remainder winner", result % getIntegerValue("total balance all") + 1)
   ]
 }
 
 @Callable(i)
 func invoker()= 
 if (i.caller != this) then throw("access only by project owner") else{
-    let list = split(dropRight(tryGetString(this, "participants list string"), 1), ",")
+    let list = split(tryGetString(this, keyParticipants), ",")
     func r(accum:List[Int], address:String)=
     {invoke(this, "winnerAddress", [address], [])}
     strict invoker = {FOLD<100>(list, [], r)}
@@ -209,12 +269,12 @@ if (i.caller != this) then throw("access only by project owner") else{
 @Callable(i)
 func winnerAddress(address:String)=
 if (i.caller != this) then throw("access only by project owner") else{
-    if (tryGetInteger(this, "total balance count") > tryGetInteger(this, "result remainder winner")) then [] else
+    if (tryGetInteger(this, keyTotalBalanceCount) >= tryGetInteger(this, "result remainder winner")) then [] else
         let count = totalBalance(addressFromStringValue(address))
-        if ((tryGetInteger(this, "total balance count") + count) > tryGetInteger(this, "result remainder winner")) then
-        [IntegerEntry("total balance count", tryGetInteger(this, "total balance count") + count),
+        if ((tryGetInteger(this, keyTotalBalanceCount) + count) >= tryGetInteger(this, "result remainder winner")) then
+        [IntegerEntry(keyTotalBalanceCount, tryGetInteger(this, keyTotalBalanceCount) + count),
         StringEntry("winner address", address)] 
-            else [IntegerEntry("total balance count", tryGetInteger(this, "total balance count") + count)]
+            else [IntegerEntry(keyTotalBalanceCount, tryGetInteger(this, keyTotalBalanceCount) + count)]
 }
 
 @Callable(i)
@@ -226,7 +286,7 @@ if (i.caller != this) then throw("access only by project owner") else{
     strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
     strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
     strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], 
-    [AttachedPayment(surfId, if assetBalance(this, surfId) - d8 > 0 then assetBalance(this, surfId) - d8 else 0)])
+    [AttachedPayment(surfId, if assetBalance(this, surfId) - d6 > 0 then assetBalance(this, surfId) - d6 else 0)])
     strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
     strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
     strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
@@ -235,17 +295,20 @@ if (i.caller != this) then throw("access only by project owner") else{
     [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0 then wavesBalance(this).available - d8 else 0)])
 
     let burnxtnBalanceAfter = assetBalance(this, burnxtn)
-    let prizeAmount = burnxtnBalanceAfter - burnxtnBalanceBefore 
-    - (whirlpoolSupply * 2)
+    strict prizeAmount = fraction((burnxtnBalanceAfter - burnxtnBalanceBefore), 80, 100)
     let winnerAddress = addressFromStringValue(getStringValue(this, "winner address"))
 
-    let surfBurnAmount = if (assetBalance(this, surfId) < d8) then assetBalance(this, surfId) else d8
+    let bonus = fraction((burnxtnBalanceAfter - burnxtnBalanceBefore), 10, 100)
+    strict bonusAmount = fraction(bonus, totalWhirlpoolBalance(winnerAddress), tryGetInteger(this, "total balance Whirlpool all"))
+
+    let surfBurnAmount = if (assetBalance(this, surfId) < (d6)) then assetBalance(this, surfId) else d6
     let surfBurn = Burn(surfId, surfBurnAmount)
     [
     BooleanEntry("reset", false),
     surfBurn,
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount),
     ScriptTransfer(winnerAddress, prizeAmount, burnxtn),
-    ScriptTransfer(winnerAddress, totalWhirlpoolBalance(winnerAddress), burnxtn)
+    ScriptTransfer(winnerAddress, bonusAmount, burnxtn)
     # NFT bonus
     ]
 }
@@ -253,7 +316,7 @@ if (i.caller != this) then throw("access only by project owner") else{
 @Callable(i)
 func jackpot()=
 if (i.caller != this) then throw("access only by project owner") else{
-  let randHash = sha256(rand(i) + getBinaryValue("randhash") )
+  let randHash = sha256(rand(i) + getBinaryValue("randhash winner") )
   let randHashInt = toInt(randHash)
   let result = if (randHashInt < 0) then (-1 * randHashInt) else (randHashInt)
   [
@@ -275,14 +338,14 @@ if (i.caller != this) then throw("access only by project owner") else{
   BinaryEntry("rand winner", rand(i)),
   BinaryEntry("randhash winner", randHash),
   IntegerEntry("randhash int winner", result),
-  IntegerEntry("result remainder winner", result % getIntegerValue("total balance all"))
+  IntegerEntry("result remainder winner", result % getIntegerValue("total balance all") + 1)
   ]
 }
 
 @Callable(i)
 func jackpotInvoker()= 
 if (i.caller != this) then throw("access only by project owner") else{
-    let list = split(dropRight(tryGetString(this, "participants list string"), 1), ",")
+    let list = split(tryGetString(this, keyParticipants), ",")
     func r(accum:List[Int], address:String)=
     {invoke(this, "jackpotAddress", [address], [])}
     strict invoker = {FOLD<100>(list, [], r)}
@@ -292,12 +355,12 @@ if (i.caller != this) then throw("access only by project owner") else{
 @Callable(i)
 func jackpotAddress(address:String)=
 if (i.caller != this) then throw("access only by project owner") else{
-    if (tryGetInteger(this, "total balance jackpot count") > tryGetInteger(this, "result remainder winner")) then [] else
+    if (tryGetInteger(this, keyTotalBalanceJackpotCount) >= tryGetInteger(this, "result remainder winner")) then [] else
         let count = totalBalance(addressFromStringValue(address))
-        if ((tryGetInteger(this, "total balance jackpot count") + count) > tryGetInteger(this, "result remainder winner")) then
-        [IntegerEntry("total balance jackpot count", tryGetInteger(this, "total balance jackpot count") + count),
+        if ((tryGetInteger(this, keyTotalBalanceJackpotCount) + count) >= tryGetInteger(this, "result remainder winner")) then
+        [IntegerEntry(keyTotalBalanceJackpotCount, tryGetInteger(this, keyTotalBalanceJackpotCount) + count),
         StringEntry("jackpot address", address)] 
-            else [IntegerEntry("total balance jackpot count", tryGetInteger(this, "total balance jackpot count") + count)]
+            else [IntegerEntry(keyTotalBalanceJackpotCount, tryGetInteger(this, keyTotalBalanceJackpotCount) + count)]
 }
 
 @Callable(i)
@@ -305,11 +368,15 @@ func payJackpot()=
 if (i.caller != this) then throw("access only by project owner") else
 if getBooleanValue("jackpot") == false then throw("no jackpot") else 
 {
-    let prizeAmount = assetBalance(this, burnxtn) / 2 - (whirlpoolSupply * 20)
+    strict prizeAmount = fraction(assetBalance(this, burnxtn), 40, 100)
+    let bonus = fraction(assetBalance(this, burnxtn), 5, 100)
+    strict bonusAmount = fraction(bonus, 
+        totalWhirlpoolBalance(addressFromStringValue(getStringValue(this, "jackpot address"))), 
+        tryGetInteger(this, "total balance Whirlpool all"))
     let winnerAddress = addressFromStringValue(getStringValue(this, "jackpot address"))
     [
     ScriptTransfer(winnerAddress, prizeAmount, burnxtn),
-    ScriptTransfer(winnerAddress, totalWhirlpoolBalance(winnerAddress) * 10, burnxtn)
+    ScriptTransfer(winnerAddress, bonusAmount, burnxtn)
     # NFT bonus
     ]
 }
@@ -318,8 +385,8 @@ if getBooleanValue("jackpot") == false then throw("no jackpot") else
 func reset()=
 if (i.caller != this) then throw("access only by project owner") else{
     [
-    IntegerEntry("total balance count", 0),
-    IntegerEntry("total balance jackpot count", 0),
+    IntegerEntry(keyTotalBalanceCount, 0),
+    IntegerEntry(keyTotalBalanceJackpotCount, 0),
     BooleanEntry("jackpot", false),
     BooleanEntry("reset", true)
     ]
