@@ -3,7 +3,6 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 {-# IMPORT artifacts/mainnet.ride #-}
 
-
 let d8 = 100000000
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
@@ -26,10 +25,35 @@ let usdterc = base58'9wc3LXNA4TEBsXyKtoLE9mrbDD7WMHXvXrCjZvabLAsi'
 let usdcerc = base58'HGgabTqUS8WtVFUJzfmrTDMgEccJuZLBPhFgQFxvnsoW'
 let usdtbsc = base58'A81p1LTRyoq2rDR2TNxB2dWYxsiNwCSSi8sXef2SEkwb'
 let usdcbsc = base58'4BKKSp6NoNcrFHyorZogDyctq1fq6w7114Ym1pw6HUtC'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 
-let burnxtnbalance = assetBalance(Address(poolId), burnxtnId)
-let wavesbalance = wavesBalance(Address(poolId)).regular
-let burnxtnwavesprice = fraction(d8, wavesbalance * 11, burnxtnbalance)
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX = wavesBalance(WX_BURNXTN_WAVES).regular + baseAmount
+let burnxtnInWX = assetBalance(WX_BURNXTN_WAVES, burnxtnId)
+let burnxtnwavesprice = fraction(d8 , wavesInWX, burnxtnInWX)
 
 let burnxtnbalance2 = assetBalance(Address(pool2), burnxtnId)
 let usdbalance = (assetBalance(Address(pool2), usdterc) + assetBalance(Address(pool2), usdcerc) + assetBalance(Address(pool2), usdtbsc) + assetBalance(Address(pool2), usdcbsc)) / 4
@@ -50,7 +74,7 @@ let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial
 func FirstInvoke() = 
 if (i.caller != this) then throw("access only by project owner") else{
   strict PoolGrowthStep1 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep1", [], []) else unit 
-  strict PoolGrowthStep2 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep2", [], []) else unit
+  #strict PoolGrowthStep2 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep2", [], []) else unit
   strict PriceGrowth = if (burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then invoke(this, "Pump", [], []) else unit
   strict dEntry = invoke(this, "dEntry", [], [])
   []}
@@ -76,11 +100,12 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   let xtnburnamount = assetBalance(this, xtnId)
   let xtnBurn = Burn(xtnId, xtnburnamount)
+  #let xtnBurn = ScriptTransfer(Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC'), xtnburnamount, xtnId)
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
     [
     xtnBurn,
     burnxtnBurn,
-    BooleanEntry("PoolGrowthStep1", true),
+    #BooleanEntry("PoolGrowthStep1", true),
     IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
     ]
 }
@@ -93,10 +118,10 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
   strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
   strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
-  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  #strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
   strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
-  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
-then wavesBalance(this).available - 10000000
+  strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
+then wavesBalance(this).available - d8
 else 0)])
   []
 }
@@ -129,13 +154,14 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
   strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
   strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
-  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  #strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
   strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
-  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
-then wavesBalance(this).available - 10000000
+  strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
+then wavesBalance(this).available - d8
 else 0)])
   let xtnburnamount = assetBalance(this, xtnId)
   let xtnBurn = Burn(xtnId, xtnburnamount)
+  #let xtnBurn = ScriptTransfer(Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC'), xtnburnamount, xtnId)
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
     [
     xtnBurn,
@@ -167,8 +193,8 @@ if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw
   strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
   strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
   strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
-  strict swaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - 10000000 > 0
-then wavesBalance(this).available - 10000000
+  strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
+then wavesBalance(this).available - d8
 else 0)])
   let xtnburnamount = assetBalance(this, xtnId)
   let xtnBurn = Burn(xtnId, xtnburnamount)
