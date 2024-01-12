@@ -4,6 +4,22 @@
 {-# IMPORT artifacts/mainnet.ride #-}
 
 
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let d8 = 100000000
+let d16 = (d8 * d8)
+
+let unlockBlock = (30 * 1440)
+let heirPubKey = base58'2kpmuzw1ZbrtgAN3BrR7vbEW1XrJoJKCstL7mf7XNf2P' # Ivash
+
+let unlockBlock2 = (90 * 1440)
+let PuzzleMasterPubKey = base58'4z8CKSYQBKkzx7PBb5uBP1YPa6YAHRNTApW1sQVHT5eU' # Vladimir and Ania Address: 3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf
+
 let burnxtnpoolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let burnxtnString = toBase58String(burnxtnpoolId)
 
@@ -12,14 +28,24 @@ let burnxpptString = toBase58String(burnxpptpoolId)
 
 let burnxtn_pz_amount = getIntegerValue(Address(burnxtnpoolId), ("3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr" + "_indexStaked"))
 let burnxppt_pz_amount = getIntegerValue(Address(burnxpptpoolId), ("3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr" + "_indexStaked"))
+let activated = getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight")
 
 let PZ_burnxtn_id = base58'GdrDHazRGcCYeCgDEZzLpsZ3E7jmrxYB7EDUiGfiVAr1'
 let PZ_burnxtnppt_id = base58'2r5xCUHFLQVHKNC5k6qqRnDTT485KvKwAtbNtM2Wy4wW'
+let WX_burnxtnwaves_id = base58'GyiHdcN59sZ46baFvj68ruLngrTPEvWDtsd6jHm4o46n'
+let WX_peteburnxtn_id = base58'3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z'
 
 let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+
+func PL_value(dAppAddress:Address, asset:ByteVector)=
+{
+  fraction(tryGetInteger(dAppAddress, (toString(this) + "_supplied_" + toBase58String(asset))), 
+  tryGetInteger(dAppAddress, (toBase58String(asset) + "_sRate")), 
+  d16)
+}
 
 @Callable(i)
 func unstakeIndex_burnxtn() = 
@@ -40,6 +66,18 @@ strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_
 ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id)
 ]
 }   
+
+@Callable(i)
+func transferLPsAll() = 
+if (i.caller != this) then throw("access only by project owner") else
+{
+[
+ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id),
+ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id),
+ScriptTransfer(wavesdaoaddress, assetBalance(this, WX_burnxtnwaves_id), WX_burnxtnwaves_id),
+ScriptTransfer(wavesdaoaddress, assetBalance(this, WX_peteburnxtn_id), WX_peteburnxtn_id)
+]
+}  
 
 # If func dEntry of dApp: 3PAucbbumdUXmhzcR421zGiayphEdo2tRoz is not invoked in 30 days by wallet owner, then functions _byAnybody, can be called by anybody.
 @Callable(i)
@@ -63,6 +101,15 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtn
 }
 
 @Callable(i)
+func withdrawXTN_Axly() = 
+if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+{
+  let withdrawAmount = PL_value(Address(base58'3PAd9Aqg3cQSzu26MFYWQYcjSXPVCJtuf5V'), xtnId)
+  strict withdraw = invoke(Address(base58'3PAd9Aqg3cQSzu26MFYWQYcjSXPVCJtuf5V'), "withdraw", [toBase58String(xtnId),withdrawAmount], [])
+  []
+}
+
+@Callable(i)
 func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
 #Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
@@ -73,7 +120,7 @@ if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 @Callable(i)
 func unstakeTsunamiWAVESvault_byAnybody(amount:Int) = 
 #Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd 
-Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
+#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
 if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstake = invoke(Address(base58'3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd'), "unStake", [amount], [])
@@ -83,7 +130,7 @@ ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit)
 }
 
 @Callable(i)
-func returnAssets_byAnybody(amount:Int) = 
+func returnAssets_byAnybody() = 
 if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 [
@@ -91,4 +138,22 @@ ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit),
 ScriptTransfer(wavesdaoaddress, assetBalance(this, swaves), swaves),
 ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
 ]
+}
+
+@Callable(i)
+func withdraw() = {
+  if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+  strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+  []
+}
+
+@Verifier(tx)
+func verify()={
+  sigVerify_16Kb(tx.bodyBytes, tx.proofs[0], tx.senderPublicKey)
+
+  || if (height < activated + unlockBlock) then false else
+  sigVerify_16Kb(tx.bodyBytes, tx.proofs[0], heirPubKey)
+
+  || if (height < activated + unlockBlock2) then false else
+  sigVerify_16Kb(tx.bodyBytes, tx.proofs[0], PuzzleMasterPubKey)
 }
