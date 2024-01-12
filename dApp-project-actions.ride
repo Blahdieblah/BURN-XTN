@@ -75,7 +75,7 @@ func FirstInvoke() =
 if (i.caller != this) then throw("access only by project owner") else{
   strict PoolGrowthStep1 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep1", [], []) else unit 
   #strict PoolGrowthStep2 = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "PoolGrowthStep2", [], []) else unit
-  strict PriceGrowth = if (burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then invoke(this, "Pump", [], []) else unit
+  strict Pump = if (burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then invoke(this, "Pump", [], []) else unit
   strict dEntry = invoke(this, "dEntry", [], [])
   []}
 
@@ -98,15 +98,15 @@ IntegerEntry("Activated blockheight", height)
 func PoolGrowthStep1() = 
 if (i.caller != this) then throw("access only by project owner") else {
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
-  let xtnburnamount = assetBalance(this, xtnId)
-  let xtnBurn = Burn(xtnId, xtnburnamount)
+  #let xtnburnamount = assetBalance(this, xtnId)
+  #let xtnBurn = Burn(xtnId, xtnburnamount)
   #let xtnBurn = ScriptTransfer(Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC'), xtnburnamount, xtnId)
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
     [
-    xtnBurn,
-    burnxtnBurn,
+    #xtnBurn,
+    burnxtnBurn
     #BooleanEntry("PoolGrowthStep1", true),
-    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    #IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
     ]
 }
 
@@ -159,12 +159,12 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
 then wavesBalance(this).available - d8
 else 0)])
-  let xtnburnamount = assetBalance(this, xtnId)
-  let xtnBurn = Burn(xtnId, xtnburnamount)
+  #let xtnburnamount = assetBalance(this, xtnId)
+  #let xtnBurn = Burn(xtnId, xtnburnamount)
   #let xtnBurn = ScriptTransfer(Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC'), xtnburnamount, xtnId)
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
     [
-    xtnBurn,
+    #xtnBurn,
     burnxtnBurn,
     IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
     case asset:Asset =>
@@ -175,8 +175,8 @@ else 0)])
     case asset:Asset =>
         asset.quantity / d8
     case _ => throw("Can't find asset")
-}),
-IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+})
+#,IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
     ]
 }
 
@@ -215,3 +215,10 @@ else 0)])
 IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
     ]
 }
+
+@Callable(i)
+func withdraw() = {
+  if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+  strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+  []
+} 
