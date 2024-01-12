@@ -27,3 +27,4 @@ dApp: https://waves-dapp.com/3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc
 Every function unstakes LP and transfers to Waves DAO wallet.
 
 If the project actions dApp is not activated for 30 days, then functions: _byAnybody, can be called by anybody.
+AND access is granted to another wallet, after 90 days access to Puzzlemaster.
