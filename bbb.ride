@@ -23,6 +23,8 @@ let d6 = 1000000
 let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
 let bbbPoolId = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let puzzleMarket = Address(base58'3P6fAxtw12pjFhayEfpcUWxgu2BHVCeP78A')
+let puzzleMinter = Address(base58'3PFQjjDMiZKQZdu5JqTHD7HwgSXyp9Rw9By')
 
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let waves = base58'WAVES'
@@ -79,7 +81,6 @@ let SURFboardList = [
     "7NEFBnvGGMfYdBnhMLNpuVgS22LpcgXCZgHfm8DHmmiA",
     "GoF9yokxHgPNoxoWgjjdmGeWhcLYArSsxqffRtfYGtfs"
 ]
-
 
 @Callable(i)
 func invokeClI1()=
@@ -146,9 +147,12 @@ func resetCount()=
 func countNFTpower(address:String)= 
 {
     func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
+    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
+    + if (tryGetString(puzzleMarket, "nft_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_seller") == address) then tryGetInteger(puzzleMinter, "group_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_available") else 0
     let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
 
     func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
+    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
     let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
 
     if ((shareWFS + shareBBB) == 0) then
@@ -209,12 +213,16 @@ func distributeRewards(address:String)=
 if (i.caller != this) then throw("access only by project owner") else
 {
     func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
+    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
+    + if (tryGetString(puzzleMarket, "nft_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_seller") == address) then tryGetInteger(puzzleMinter, "group_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_available") else 0
     let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
 
     func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
+    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
     let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
 
     func foldFuncC(acc:Int, SURFboard:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(SURFboard))
+    + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
     let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
 
     strict bs = invoke(this, "burnSurf", [], [])
@@ -296,9 +304,12 @@ func distributeRewardsByAnybody(address:String)=
 if (i.caller != this) then throw("access only by project owner") else
 {
     func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
+    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
+    + if (tryGetString(puzzleMarket, "nft_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_seller") == address) then tryGetInteger(puzzleMinter, "group_7s3VCMFPwaVGAqPoYwfbaj3r7EYq1uyeuWb2sTP1AZ3Y_available") else 0
     let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
 
     func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
+    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
     let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
 
     if ((shareWFS + shareBBB) == 0) then
