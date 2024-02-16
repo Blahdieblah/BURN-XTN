@@ -80,37 +80,40 @@ func totalBalance(address:Address)= {
     let PZ2balance = fraction(PZbal(PZ2, address, burnxtn), (10000 - tryGetInteger(Address(PZ2), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let PZ3balance = fraction(PZbal(PZ3, address, burnxtn), (10000 - tryGetInteger(Address(PZ3), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let PZ4balance = fraction(PZbal(PZ4, address, burnxtn), (10000 - tryGetInteger(Address(PZ4), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
-    let PZ5balance = fraction(PZbal(PZ5, address, burnxtn), (10000 - tryGetInteger(Address(PZ5), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
-    let PZ6balance = fraction(PZbal(PZ6, address, burnxtn), (10000 - tryGetInteger(Address(PZ6), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
+    #let PZ5balance = fraction(PZbal(PZ5, address, burnxtn), (10000 - tryGetInteger(Address(PZ5), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
+    #let PZ6balance = fraction(PZbal(PZ6, address, burnxtn), (10000 - tryGetInteger(Address(PZ6), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let PZ7balance = fraction(PZbal(PZ7, address, burnxtn), (10000 - tryGetInteger(Address(PZ7), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let PZ8balance = fraction(PZbal(PZ8, address, burnxtn), (10000 - tryGetInteger(Address(PZ8), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
-    let PZ9balance = fraction(PZbal(PZ9, address, burnxtn), (10000 - tryGetInteger(Address(PZ9), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
+    #let PZ9balance = fraction(PZbal(PZ9, address, burnxtn), (10000 - tryGetInteger(Address(PZ9), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let WX1balance = fraction(WXbal(WX1, address, LP1), 50, 100)
     let WX2balance = fraction(WXbal(WX2, address, LP2), 50, 100)
-    PZ1balance + PZ2balance + PZ3balance + PZ4balance + PZ5balance + PZ6balance + PZ7balance + PZ8balance + PZ9balance
+    PZ1balance + PZ2balance + PZ3balance + PZ4balance 
+    #+ PZ5balance + PZ6balance 
+    + PZ7balance + PZ8balance 
+    #+ PZ9balance
     + WX1balance + WX2balance
 }
 
 func rewardAmount(address:String)={
-    func foldFunc(acc:Int, WFS:String) = acc + assetBalance((address), fromBase58String(WFS))
+    func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
     + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
     let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
     let WFSbonus = if shareWFS > 0 then 1 else 0 
 
-    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance((address), fromBase58String(BBB))
+    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
     + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
     let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
     let BBBbonus = if shareBBB > 0 then 9 else 0
     
-    strict  = fraction(tryGetInteger(this, keyBurnxtnBalance), 
-    (100 + WFSbonus + BBBbonus) * tryGetInteger(this, address), 
-    110 * tryGetInteger(this, keyTotalBalanceCount))
+    fraction(tryGetInteger(this, keyBurnxtnBalance), 
+    ((100 + WFSbonus + BBBbonus) * tryGetInteger(this, address)), 
+    (110 * tryGetInteger(this, keyTotalBalanceCount)))
 }
 
 @Callable(i)
 func register()= 
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
-if tryGetInteger(this, keyAmountRegistered) >= 100 then throw("max registered users") else
+if tryGetInteger(this, keyAmountRegistered) >= 76 then throw("max registered users") else
 {
   [
     IntegerEntry(keyAmountRegistered, tryGetInteger(this, keyAmountRegistered) + 1),
@@ -127,14 +130,12 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
     let list = split_4C(tryGetString(this, keyAddressesRegistered), ",")
     func bal(accum:List[IntegerEntry], address:String)=
     {accum ++ [IntegerEntry(address, totalBalance(addressFromStringValue(address)))]}
-    let updateBalance = {FOLD<100>(list, nil, bal)}
+    let updateBalance = {FOLD<76>(list, nil, bal)}
     [] ++ updateBalance
 }
 
 @Callable(i)
-func totalBalanceAll()=
-if (i.caller != this) then throw("access only by project owner") else
-if getBooleanValue(this, "reset") == false then throw("reset first") else
+func claimSwap()=
 {
     strict claimInv = invoke(Address(PZ1), "claimIndexRewards", [], [])
     strict swest = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
@@ -146,15 +147,19 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
     strict sswop = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
     strict sxtn = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(xtn,assetBalance(this, xtn))])
     strict swapwaves = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0 then wavesBalance(this).available - d8 else 0)])
-    
+    [IntegerEntry(keyBurnxtnBalance, assetBalance(this, burnxtn))]
+}
+
+@Callable(i)
+func totalBalanceAll()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
     let list = split_4C(tryGetString(this, keyParticipants), ",")
     func ba(accum:Int, address:String)=
     {accum + totalBalance(addressFromStringValue(address))}
-    let enterTotalBalanceAll = {FOLD<100>(list, 0, ba)}
-    [
-    IntegerEntry(keyTotalBalanceCount, enterTotalBalanceAll),
-    IntegerEntry(keyBurnxtnBalance, assetBalance(this, burnxtn))
-    ]
+    let enterTotalBalanceAll = {FOLD<76>(list, 0, ba)}
+    [IntegerEntry(keyTotalBalanceCount, enterTotalBalanceAll)]
 }
 
 @Callable(i)
@@ -162,12 +167,7 @@ func payRewards()=
 if (i.caller != this) then throw("access only by project owner") else{
     let list = split_4C(tryGetString(this, keyAddressesRegistered), ",")
     func pay(accum:List[ScriptTransfer], address:String)=
-    {accum ++ [
-        ScriptTransfer(addressFromStringValue(address), 
-
-, 
-
-        burnxtn)]}
-    let payReward = {FOLD<100>(list, nil, pay)}
+    {accum ++ [ScriptTransfer(addressFromStringValue(address), rewardAmount(address), burnxtn)]}
+    let payReward = {FOLD<76>(list, nil, pay)}
     [] ++ payReward
 }
