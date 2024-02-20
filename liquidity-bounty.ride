@@ -42,24 +42,26 @@ let keyBurnxtnBalance = "BURN-XTN balance-"
 
 let puzzleMarket = Address(base58'3P6fAxtw12pjFhayEfpcUWxgu2BHVCeP78A')
 let NFT = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAG"]
+let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
 let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
 
-let PZ1 = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
-let PZ2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
-let PZ3 = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi'
-let PZ4 = base58'3PDJPGn6vBEBqWN4E3fNcxoKBoDXbsmoaM7'
-let PZ5 = base58'3PCS1xhGQi2eM5mYcCBhUSHvB31Kk5gZoCm'
-let PZ6 = base58'3P8Quvmgt3VEWAjBR3bsfgCqzUh7zTmTC4q'
-let PZ7 = base58'3PQpQHGEVvMKCzHCP2R2rq7LvfB2Zzmx2Db'
-let PZ8 = base58'3PJEUtmcUTUj4UVgEPQi8Un5rpKvR4pFW5F'
-let PZ9 = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let PZ1 = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB' #BURN-XTN
+let PZ2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx' #BURN-XTN x PepeTeam
+let PZ3 = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi' #Mega volatile gang
+let PZ4 = base58'3PDJPGn6vBEBqWN4E3fNcxoKBoDXbsmoaM7' #BURN-XTN / Puzzle
+let PZ5 = base58'3PCS1xhGQi2eM5mYcCBhUSHvB31Kk5gZoCm' #Only good vibes
+let PZ6 = base58'3P8Quvmgt3VEWAjBR3bsfgCqzUh7zTmTC4q' #lmao what a pool
+let PZ7 = base58'3PQpQHGEVvMKCzHCP2R2rq7LvfB2Zzmx2Db' #Scarcity pool
+let PZ8 = base58'3PJEUtmcUTUj4UVgEPQi8Un5rpKvR4pFW5F' #Dragon pool
+let PZ9 = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk' #BBB & WFS
 
 let WXstake = base58'3PPNhHYkkEy13gRWDCaruQyhNbX2GrjYSyV'
-let WX1 = base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5'
+let WX1 = base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5' #BURN-XTN/WAVES
 let LP1 = "GyiHdcN59sZ46baFvj68ruLngrTPEvWDtsd6jHm4o46n"
-let WX2 = base58'3PKXseWa31VUSWUvm2YiRKxW2VM9RsVk3ry'
+let WX2 = base58'3PKXseWa31VUSWUvm2YiRKxW2VM9RsVk3ry' #BURN-XTN/PETE
 let LP2 = "3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z"
+let WX3 = base58'3PKkWhWS4wUPHi8gGwYVRu7tCCmRUriK6aC' #BURN-XTN/XTN
+let LP3 = "7BLynNvde1NTBbaivX9zj1h1rrN9L1kWeWkFzpFhpJBz"
 
 func PZbal(Pooladdress:ByteVector, address:Address, asset:ByteVector) = {
     let burnxtnInPZ = tryGetInteger(Address(Pooladdress), ("global_" + toBase58String(asset)) + "_balance")
@@ -87,11 +89,12 @@ func totalBalance(address:Address)= {
     #let PZ9balance = fraction(PZbal(PZ9, address, burnxtn), (10000 - tryGetInteger(Address(PZ9), "static_" + toBase58String(burnxtn) + "_weight")), 10000)
     let WX1balance = fraction(WXbal(WX1, address, LP1), 50, 100)
     let WX2balance = fraction(WXbal(WX2, address, LP2), 50, 100)
+    let WX3balance = fraction(WXbal(WX3, address, LP3), 50, 100)
     PZ1balance + PZ2balance + PZ3balance + PZ4balance 
     #+ PZ5balance + PZ6balance 
     + PZ7balance + PZ8balance 
     #+ PZ9balance
-    + WX1balance + WX2balance
+    + WX1balance + WX2balance + WX3balance
 }
 
 func rewardAmount(address:String)={
