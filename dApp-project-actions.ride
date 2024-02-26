@@ -3,15 +3,17 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 {-# IMPORT artifacts/mainnet.ride #-}
 
+let d6 = 1000000
 let d8 = 100000000
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
 let pool2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
 let poolMega = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi'
+let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 
-let NFT = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-let keyTotalNFTpower = "Total NFT power"
+#let NFT = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
+#let keyTotalNFTpower = "Total NFT power"
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
@@ -31,6 +33,8 @@ let usdtbsc = base58'A81p1LTRyoq2rDR2TNxB2dWYxsiNwCSSi8sXef2SEkwb'
 let usdcbsc = base58'4BKKSp6NoNcrFHyorZogDyctq1fq6w7114Ym1pw6HUtC'
 let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 
 # calculate value of sWAVES to WAVES
 let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
@@ -85,6 +89,35 @@ if (i.caller != this) then throw("access only by project owner") else{
     []}
 
 @Callable(i)
+func secondInvoke()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict wavesBalanceBefore = wavesBalance(this).available
+    strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
+    strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))])
+    strict swapSwop = invoke(Address(poolMega), "swap", [toBase58String(puzzle), 0], [AttachedPayment(swopId, assetBalance(this, swopId))])
+    strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle, assetBalance(this, puzzle))])
+    strict swapWhirl = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(whirlpool, assetBalance(this, whirlpool))])
+    strict swapRome = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(rome, assetBalance(this, rome))])
+    let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
+    strict swapBurnxtn = invoke(Address(poolId), "swap", [toBase58String(surfId), 0], [AttachedPayment(burnxtnId, burnxtnDifference)])
+    let wavesDifference = wavesBalance(this).available - wavesBalanceBefore
+    strict swapWaves = invoke(Address(poolId), "swap", [toBase58String(surfId), 0], [AttachedPayment(unit, wavesDifference)])
+
+    let surfBurnAmount = assetBalance(this, surfId)
+    let surfBurn = Burn(surfId, surfBurnAmount)
+    [
+    surfBurn,
+    IntegerEntry("SURF total burned", getIntegerValue(this, "SURF total burned") + surfBurnAmount),
+    IntegerEntry("SURF supply", match assetInfo(surfId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset")
+    })
+    ]
+}
+
+@Callable(i)
 func dEntry() =
 if (i.caller != this) then throw("access only by project owner") else{
     [
@@ -113,8 +146,6 @@ if (i.caller != this) then throw("access only by project owner") else{
 func grow()= 
 if (i.caller != this) then throw("access only by project owner") else {
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
-  strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, fraction(assetBalance(this, surfId), getIntegerValue(NFT, keyTotalNFTpower), 110))])
-  strict swapSwop = invoke(Address(poolMega), "swap", [toBase58String(puzzle), 0], [AttachedPayment(swopId, fraction(assetBalance(this, swopId), getIntegerValue(NFT, keyTotalNFTpower), 110))])
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
   [burnxtnBurn]
 }
@@ -126,26 +157,11 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
   strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
-  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId, fraction(assetBalance(this, surfId), 110 - getIntegerValue(NFT, keyTotalNFTpower), 110))])
   strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
-  #strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
-  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId, fraction(assetBalance(this, swopId), 110 - getIntegerValue(NFT, keyTotalNFTpower), 110))])
   strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
-then wavesBalance(this).available - d8
-else 0)])
-  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
-    [
-    burnxtnBurn,
-    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
-    case asset:Asset =>
-        asset.quantity / d8
-    case _ => throw("Can't find asset")
-}),
-    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
-    case asset:Asset =>
-        asset.quantity / d8
-    case _ => throw("Can't find asset")
-})]
+    then wavesBalance(this).available - d8
+    else 0)])
+    [Burn(burnxtnId, assetBalance(this, burnxtnId))]
 }
 
 # If func dEntry is not invoked in 8 days, then function PumpByAnybody, can be called by anybody. (This is tokenomics mode: burn XTN fees, buyback & burn BURN-XTN).
@@ -197,6 +213,11 @@ if (i.caller != this) then throw("access only by project owner") else {
   let xtnBurn = Burn(xtnId, xtnburnamount)
     [
     xtnBurn,
-    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount),
+    IntegerEntry("XTN supply", match assetInfo(xtnId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset")
+    })
     ]
 }
