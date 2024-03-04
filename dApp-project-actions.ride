@@ -3,6 +3,13 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 {-# IMPORT artifacts/mainnet.ride #-}
 
+func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
 let d6 = 1000000
 let d8 = 100000000
 
@@ -108,12 +115,7 @@ if (i.caller != this) then throw("access only by project owner") else
     let surfBurn = Burn(surfId, surfBurnAmount)
     [
     surfBurn,
-    IntegerEntry("SURF total burned", getIntegerValue(this, "SURF total burned") + surfBurnAmount),
-    IntegerEntry("SURF supply", match assetInfo(surfId) {
-    case asset:Asset =>
-        asset.quantity / d6
-    case _ => throw("Can't find asset")
-    })
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
     ]
 }
 
@@ -138,6 +140,11 @@ if (i.caller != this) then throw("access only by project owner") else{
     case asset:Asset =>
         asset.quantity / d8
     case _ => throw("Can't find asset")
+    }),
+    IntegerEntry("SURF supply", match assetInfo(surfId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset") 
     })
     ]
 }
@@ -216,7 +223,7 @@ if (i.caller != this) then throw("access only by project owner") else {
     IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount),
     IntegerEntry("XTN supply", match assetInfo(xtnId) {
     case asset:Asset =>
-        asset.quantity / d6
+        (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
     case _ => throw("Can't find asset")
     })
     ]
