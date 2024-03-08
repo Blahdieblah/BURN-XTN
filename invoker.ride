@@ -1,0 +1,258 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+
+let xtn = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let waves = base58'WAVES'
+
+let swopSC = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
+let swopLP = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
+
+let keyXtnS = "XTN starting balance"
+let keyWavesS = "WAVES starting balance"
+
+func tryGetInteger(key: String) = {
+  match getInteger(this, key) {
+      case b:Int => b
+      case _ => 0
+  }
+}
+
+func tryGetInteger2(address:Address, key: String) = {
+  match getInteger(address, key) {
+      case b:Int => b
+      case _ => 0
+  }
+}
+
+func tryGetBinary(key: String) = {
+  match getBinary(this, key) {
+      case b:ByteVector => b
+      case _ => base58''
+  }
+}
+
+func tryGetString(key: String) = {
+  match getString(this, key) {
+      case b:String => b
+      case _ => ""
+  }
+}
+
+func getAssetString(assetId: ByteVector|Unit) = {
+  match assetId {
+    case b:ByteVector => b.toBase58String()
+    case _ => "WAVES"
+  }
+}
+
+func getAssetBytes(assetIdStr: String) = {
+  if (assetIdStr == "WAVES") then {unit} else {assetIdStr.fromBase58String()}
+}
+
+func addAssetBytesToList(accum: List[ByteVector|Unit], item: String) = { accum ++ [item.getAssetBytes()] }
+func addAssetWeightToList(accum: List[Int], item: ByteVector|Unit) = { accum ++ [tryGetInteger("static_" + item.getAssetString() + "_weight")] }
+func addAssetDecimalsToList(accum: List[Int], item: ByteVector|Unit) = { accum ++ [tryGetInteger("static_" + item.getAssetString() + "_decimals")] }
+func addAssetScaleToList(accum: List[Int], item: ByteVector|Unit) = { accum ++ [tryGetInteger("static_" + item.getAssetString() + "_scale")] }
+func addIntToList(accum: List[Int], item: String) = { accum ++ [item.parseIntValue()] }
+
+let T = tryGetInteger("static_tokensAmount")
+let assetIds = FOLD<10>(tryGetString("static_tokenIds").split(","), [], addAssetBytesToList)
+let AssetsWeights = FOLD<10>(assetIds, [], addAssetWeightToList)
+let Decimals = FOLD<10>(assetIds, [], addAssetDecimalsToList)
+let Scales = FOLD<10>(assetIds, [], addAssetScaleToList)
+
+let Fee = tryGetInteger("static_fee")
+
+let AssetsWeightsDecimals = 4
+let Scale = 10000
+let Scale8 = 1_0000_0000
+let FeeScale = 10000
+
+func calculateOutAmount(AmountIn: Int, assetIn: ByteVector|Unit, assetOut: ByteVector|Unit, BalanceIn: Int, BalanceOut: Int) = {
+  let IndexIn = assetIds.indexOf(assetIn).value()
+  let IndexOut = assetIds.indexOf(assetOut).value()
+  if (IndexIn == IndexOut) then { AmountIn } 
+  else {
+    fraction( BalanceOut, 
+              Scale8 * Scale8 - 
+              pow(fraction(BalanceIn.toBigInt(), (Scale8 * Scale8).toBigInt(), (BalanceIn + AmountIn).toBigInt(), HALFUP), 
+                    16, 
+                    fraction(AssetsWeights[IndexIn], 1_0000, AssetsWeights[IndexOut]).toBigInt(),
+                    4,
+                    16,
+                    CEILING).toInt()    
+              , Scale8 * Scale8, DOWN)   
+  }
+}
+
+let wavesInSwop = fraction(
+    tryGetInteger2(swopSC, "A_asset_balance"), 
+    tryGetInteger2(swopLP, "3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_" + toString(this) + "_share_tokens_locked"),
+    tryGetInteger2(swopSC, "share_asset_supply"))
+
+let xtnInSwop = fraction(
+    tryGetInteger2(swopSC, "B_asset_balance"), 
+    tryGetInteger2(swopLP, "3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_" + toString(this) + "_share_tokens_locked"),
+    tryGetInteger2(swopSC, "share_asset_supply"))
+
+func getTokenBalance(assetId:ByteVector|Unit)=
+{
+  match (assetId) {
+      case t:ByteVector => assetBalance(this, t)
+      + if (assetId == xtn) then xtnInSwop else 0
+
+      case _ => wavesBalance(this).regular
+      + wavesInSwop
+    }
+}
+
+func sum(accum: Int, n: String) = {accum + n.parseIntValue()}
+
+func isShutdown()= {
+  match getBoolean(this, "is_shutdown") {
+    case x: Boolean => x
+    case _ => false
+  }
+}
+
+@Callable(i)
+func shutdown(shutdown:Boolean)=
+if (i.caller == this) then [BooleanEntry("is_shutdown", shutdown)] else throw("admin only")
+
+@Callable(i)
+func setup(assetIdsStr: String, assetWeightsStr: String, fee: Int) = {
+  if (isShutdown()) then {
+    throw("contract is on stop")
+  } 
+  else if (this != i.caller) then {throw("admin only")}
+  else if (fee > 500 || fee < 1) then {throw("fee value must be between 1 and 500 (0.01-5%)")}
+  else {
+    strict sb = invoke(this, "startBalance", [], [])
+
+    let assetIdsStrLi = assetIdsStr.split(",")
+    let assetIdsLi = FOLD<10>(assetIdsStrLi, [], addAssetBytesToList)
+
+    let assetWeightsStrLi = assetWeightsStr.split(",")
+    let assetWeightsSum = FOLD<10>(assetWeightsStrLi, 0, sum)
+
+    func addTokenDataEntries(accum: List[IntegerEntry], assetNum: Int) = {
+      if (assetNum >= assetIdsLi.size()) then {
+        accum
+      } else {
+        let assetDecimals = match (assetIdsLi[assetNum]) {
+          case x: ByteVector => assetInfo(x).value().decimals
+          case _ => 8
+        }
+        accum ++ [
+          IntegerEntry("static_"+assetIdsStrLi[assetNum]+"_scale", pow(10, 0, assetDecimals, 0, 0, DOWN)),
+          IntegerEntry("static_"+assetIdsStrLi[assetNum]+"_decimals", assetDecimals),
+          IntegerEntry("static_"+assetIdsStrLi[assetNum]+"_weight", assetWeightsStrLi[assetNum].parseInt().value()),
+          BooleanEntry("is_shutdown", true)
+        ]
+      }
+    }
+
+    if (assetWeightsSum != 10000) then {throw("sum of token weights must be equal to 10000")} else {
+      FOLD<10>([0,1,2,3,4,5,6,7,8,9], [], addTokenDataEntries) ++ [
+        StringEntry("static_tokenIds", assetIdsStr),
+        StringEntry("static_tokenWeights", assetWeightsStr),
+        IntegerEntry("static_tokensAmount", assetIdsLi.size()),
+        IntegerEntry("static_fee", fee)
+      ]
+    }
+  }
+}
+
+@Callable(i)
+func swap(assetOut:String, minimum:Int)=
+if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
+{  
+  let pmt = if (i.payments.size() == 1) then {i.payments[0].value()} else {throw("please attach exactly one payment")}
+  let AmountIn = i.payments[0].amount.value()
+  let AssetIn = pmt.assetId
+  let AssetOut = assetOut.getAssetBytes()
+
+  let AssetInBalance = getTokenBalance(AssetIn)
+  let AssetOutBalance = getTokenBalance(AssetOut)
+  let feeAmountIn = fraction(AmountIn, Fee, FeeScale)
+  let cleanAmountIn = AmountIn - feeAmountIn
+
+  let AmountOut = calculateOutAmount(cleanAmountIn, AssetIn, AssetOut, AssetInBalance, AssetOutBalance)
+
+  let shareAmountWithdrawWaves = 
+    if AmountOut - wavesBalance(this).regular < 0 then 0 else
+    fraction(AmountOut - wavesBalance(this).regular, 1, fraction(tryGetInteger2(swopSC, "A_asset_balance"), 1, tryGetInteger2(swopSC, "share_asset_supply")), CEILING)
+  strict uws = if (AssetOut == unit) && (shareAmountWithdrawWaves > 0) then invoke(swopSC, "callFunction", ["withdraw", [toString(shareAmountWithdrawWaves)]], []) else unit
+  
+  let shareAmountWithdrawXtn = 
+    if AmountOut - assetBalance(this, xtn) < 0 then 0 else
+    fraction(AmountOut - assetBalance(this, xtn), 1, fraction(tryGetInteger2(swopSC, "B_asset_balance"), 1, tryGetInteger2(swopSC, "share_asset_supply")), CEILING)
+  strict uxs = if (AssetOut == xtn) && (shareAmountWithdrawXtn > 0) then invoke(swopSC, "callFunction", ["withdraw", [toString(shareAmountWithdrawXtn)]], []) else unit
+
+  strict swxs = if getTokenBalance(xtn) > 0 && getTokenBalance(unit) > 0 then
+    invoke(swopSC, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular), AttachedPayment(xtn, assetBalance(this, xtn))]) else unit
+
+  if (AmountOut < minimum) then {throw("amount to receive is lower than minimum")} else 
+  if (AssetOut == AssetIn) then {throw("this swap is not allowed")} else
+  if (AssetOutBalance - AmountOut < 0) then {throw("swap smaller amount")} else
+  [ScriptTransfer(i.caller, AmountOut, AssetOut)]  
+}
+
+@Callable(i)
+func startBalance()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [
+  IntegerEntry(keyWavesS, getTokenBalance(unit)),
+  IntegerEntry(keyXtnS, getTokenBalance(xtn))
+  ]
+}
+
+@Callable(i)
+func currentBalanceProfit()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [
+  IntegerEntry("WAVES current balance", getTokenBalance(unit)),
+  IntegerEntry("XTN current balance", getTokenBalance(xtn)),
+  IntegerEntry("WAVES profit", getTokenBalance(unit) - tryGetInteger(keyWavesS)),
+  IntegerEntry("XTN profit", getTokenBalance(xtn) - tryGetInteger(keyXtnS))
+  ]
+}
+
+@Callable(i)
+func readSwap(assetOut:String, minimum:Int, assetIn:String, amountIn:Int)=
+if (isShutdown() == true) && (i.caller != Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')) then throw("contract is shutdown") else
+{  
+  let AssetIn = assetIn.getAssetBytes()
+  let AssetOut = assetOut.getAssetBytes()
+
+  let AssetInBalance = getTokenBalance(AssetIn)
+  let AssetOutBalance = getTokenBalance(AssetOut)
+  let feeAmountIn = fraction(amountIn, Fee, FeeScale)
+  let cleanAmountIn = amountIn - feeAmountIn
+
+  let AmountOut = calculateOutAmount(cleanAmountIn, AssetIn, AssetOut, AssetInBalance, AssetOutBalance)
+
+  let shareAmountWithdrawWaves = 
+    if AmountOut - wavesBalance(this).regular < 0 then 0 else
+    fraction(AmountOut - wavesBalance(this).regular, 1, fraction(tryGetInteger2(swopSC, "A_asset_balance"), 1, tryGetInteger2(swopSC, "share_asset_supply")), CEILING)
+
+  let shareAmountWithdrawXtn = 
+    if AmountOut - assetBalance(this, xtn) < 0 then 0 else
+    fraction(AmountOut - assetBalance(this, xtn), 1, fraction(tryGetInteger2(swopSC, "B_asset_balance"), 1, tryGetInteger2(swopSC, "share_asset_supply")), CEILING)
+  {
+  [
+  IntegerEntry("asset in balance", AssetInBalance),
+  IntegerEntry("asset out balance", AssetOutBalance),
+  IntegerEntry("fee amount in", feeAmountIn),
+  IntegerEntry("clean amount in", cleanAmountIn),
+  IntegerEntry("amount out", AmountOut),
+  IntegerEntry("share amount withdraw waves", shareAmountWithdrawWaves),
+  IntegerEntry("share amount withdraw xtn", shareAmountWithdrawXtn)
+  ]  
+  }
+}
