@@ -12,6 +12,7 @@ func tryGetInteger (address:Address, key:String)= match getInteger(address, key)
 
 let d6 = 1000000
 let d8 = 100000000
+let d16 = (d8 * d8)
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
@@ -42,6 +43,7 @@ let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
 let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
 let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
 
 # calculate value of sWAVES to WAVES
 let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
@@ -86,6 +88,21 @@ let tvlpool = fraction(wavesinpool, 9, d8)
 
 let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial price BURN-XTN in wavelets")) - d8) / 1000000
 
+let PL_Defi = Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X')
+
+func PL_value(dAppAddress:Address, asset:ByteVector)=
+{
+  fraction(getIntegerValue(dAppAddress, (toString(this) + "_supplied_" + toBase58String(asset))), 
+  getIntegerValue(dAppAddress, (toBase58String(asset) + "_sRate")), 
+  d16)
+}
+
+# swap WX pools
+func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
+{
+  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
+}
+
 @Callable(i)
 func FirstInvoke() = 
 if (i.caller != this) then throw("access only by project owner") else{
@@ -101,7 +118,6 @@ if (i.caller != this) then throw("access only by project owner") else
 {
     strict wavesBalanceBefore = wavesBalance(this).available
     strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
-    strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))])
     strict swapSwop = invoke(Address(poolMega), "swap", [toBase58String(puzzle), 0], [AttachedPayment(swopId, assetBalance(this, swopId))])
     strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle, assetBalance(this, puzzle))])
     strict swapWhirl = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(whirlpool, assetBalance(this, whirlpool))])
@@ -117,6 +133,14 @@ if (i.caller != this) then throw("access only by project owner") else
     surfBurn,
     IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
     ]
+}
+
+@Callable(i)
+func thirdInvoke()=
+{
+    strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))])
+    strict swapXTNtoVVXTNLP = swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    [IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId))]
 }
 
 @Callable(i)
@@ -211,7 +235,14 @@ func withdraw() = {
   if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
   strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
   []
-} 
+}
+
+@Callable(i)
+func importVVXTNLP()=
+{
+    strict import = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "importLP", [], [AttachedPayment(vvxtnlp, assetBalance(this, vvxtnlp))])
+    []
+}
 
 @Callable(i)
 func burnXTN() = 
