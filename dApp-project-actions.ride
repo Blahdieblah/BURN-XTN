@@ -100,7 +100,7 @@ func PL_value(dAppAddress:Address, asset:ByteVector)=
 # swap WX pools
 func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
 {
-  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
+  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 11, 10), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
 }
 
 @Callable(i)
