@@ -117,13 +117,10 @@ func secondInvoke()=
 if (i.caller != this) then throw("access only by project owner") else
 {
     strict wavesBalanceBefore = wavesBalance(this).available
-    strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
     strict swapSwop = invoke(Address(poolMega), "swap", [toBase58String(puzzle), 0], [AttachedPayment(swopId, assetBalance(this, swopId))])
     strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle, assetBalance(this, puzzle))])
     strict swapWhirl = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(whirlpool, assetBalance(this, whirlpool))])
     strict swapRome = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(rome, assetBalance(this, rome))])
-    let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
-    strict swapBurnxtn = invoke(Address(poolId), "swap", [toBase58String(surfId), 0], [AttachedPayment(burnxtnId, burnxtnDifference)])
     let wavesDifference = wavesBalance(this).available - wavesBalanceBefore
     strict swapWaves = invoke(Address(poolId), "swap", [toBase58String(surfId), 0], [AttachedPayment(unit, wavesDifference)])
 
