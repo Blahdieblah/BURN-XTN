@@ -107,8 +107,14 @@ func PL_value(dAppAddress:Address, asset:ByteVector)=
 # swap WX pools
 func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
 {
-  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
+  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 11, 10), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
 }
+
+# calculate WX pool price
+let VVXTNLP_XTN_AMM = Address(base58'3P9UJxhsqj1UkqPDtM16yi9aGE26V5tdH6i')
+let XTNbalance = assetBalance(VVXTNLP_XTN_AMM, xtnId)
+let VVXTNLPbalance = assetBalance(VVXTNLP_XTN_AMM, vvxtnlp)
+let VVXTNLPprice = fraction(XTNbalance, 100, VVXTNLPbalance)
 
 @Callable(i)
 func PZbbb()=
@@ -140,7 +146,7 @@ if (i.caller != this) then throw("access only by project owner") else
 func SURFandVVXTNLP()=
 {
     strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))])
-    strict swapXTNtoVVXTNLP = swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    strict swapXTNtoVVXTNLP = if (VVXTNLPprice < 80) then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
     [IntegerEntry(keyInvokeNext, 50)]
 }
 
