@@ -47,7 +47,6 @@ let keyRomeAmount = "ROME total rewards"
 let keyPuzzleAmount = "PUZZLE total rewards"
 let keyWavesAmount = "WAVES total rewards"
 let keyWhirlpoolAmount = "WHIRLPOOL total rewards"
-let keyTotalNFTpower = "Total NFT power"
 let keyTotalPuzzleValue = "Total puzzle value"
 
 let keyTotalBurnxtnPaid = "Total BURN-XTN paid"
@@ -113,59 +112,22 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func invoker1()= 
+if (i.caller != this) then throw("access only by project owner") else
 {
-    strict reset = invoke(this, "resetCount", [], [])
-    let list = split_4C(addresses, ",")
-    func r(accum:List[Int], address:String)=
-    {invoke(this, "countNFTpower", [address], [])}
-    strict invoker = {FOLD<30>(list, [], r)}
     strict p = invoke(this, "data", [], [])
     [
     IntegerEntry("WFS puzzle value", fraction(
       fraction(tryGetInteger(this, keyTotalPuzzleValue),
       1, 
-      tryGetInteger(this, keyTotalNFTpower)),
+      110),
         10,
         9)),
     IntegerEntry("BBB puzzle value", fraction(
       fraction(tryGetInteger(this, keyTotalPuzzleValue),
       10, 
-      tryGetInteger(this, keyTotalNFTpower)),
+      110),
         10,
         9))
-    ]
-}
-
-@Callable(i)
-func resetCount()=
-{
-    [IntegerEntry(keyTotalNFTpower, 0)]
-}
-
-@Callable(i)
-func countNFTpower(address:String)= 
-{
-    func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
-    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
-    let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
-
-    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
-    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
-    let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
-
-    if ((shareWFS + shareBBB) == 0) then
-    { 
-        let list = split_4C(addresses, ",")
-        let noNFTindex = value(indexOf(list, address))
-        let listMinusNoNFT = removeByIndex(list, noNFTindex)
-        let minusNoNFTstr = makeString(listMinusNoNFT, ",") + ","
-        [StringEntry(keyAddressesRegistered, minusNoNFTstr)]
-    }
-    else
-    [
-    IntegerEntry(address + "_WFS", shareWFS),
-    IntegerEntry(address + "_BBB", shareBBB * 10),
-    IntegerEntry(keyTotalNFTpower, (tryGetInteger(this, keyTotalNFTpower) + (shareWFS + (shareBBB * 10))))
     ]
 }
 
@@ -187,7 +149,7 @@ if (i.caller != this) then throw("access only by project owner") else
     let list = split_4C(addresses, ",")
     func r(accum:List[Int], address:String)=
     {invoke(this, "distributeRewards", [address], [])}
-    strict invoker = {FOLD<20>(list, [], r)}
+    strict invoker = {FOLD<40>(list, [], r)}
 
     strict bs = invoke(this, "burnSurf", [], [])
     []
@@ -195,6 +157,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func trackTotalPaid()=
+if (i.caller != this) then throw("access only by project owner") else
 {
   let amountBurnxtn = tryGetInteger(this, keyBurnxtnAmount)
   let amountWhirlpool = tryGetInteger(this, keyWhirlpoolAmount)
@@ -224,10 +187,20 @@ if (i.caller != this) then throw("access only by project owner") else
     + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
     let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
 
-    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
+    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
+    { 
+        let list = split_4C(addresses, ",")
+        let noNFTindex = value(indexOf(list, address))
+        let listMinusNoNFT = removeByIndex(list, noNFTindex)
+        let minusNoNFTstr = makeString(listMinusNoNFT, ",") + ","
+        [StringEntry(keyAddressesRegistered, minusNoNFTstr)]
+    }
+    else
+
+    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), 110)
     [
     ScriptTransfer(addressFromStringValue(address), amountBurnxtn, burnxtn),
     ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
@@ -239,6 +212,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func burnSurf()=
+if (i.caller != this) then throw("access only by project owner") else
 {
   [
   Burn(surf, d6),
@@ -252,15 +226,6 @@ if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) th
 if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
 {
   [StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]
-  }
-
-@Callable(i)
-func registerManually(address:String)=
-if (contains(tryGetString(this, keyAddressesRegistered), address)) then throw("already registered") else
-if size(split_4C(addresses, ",")) == 40 then throw("max reached") else
-if (i.caller != this) then throw("access only by project owner") else
-{
-  [StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + address + ","))]
   }
 
 @Callable(i)
@@ -288,16 +253,17 @@ if height < getIntegerValue(this, "Activated blockheight") + 30 * 1440 then thro
 func invokerByAnybody()=
 if height < getIntegerValue(this, "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
-    strict reset = invoke(this, "distributeRewardsByAnybody", [], [])
+    strict t = invoke(this, "trackTotalPaid", [], [])
     let list = split_4C(addresses, ",")
     func r(accum:List[Int], address:String)=
-    {invoke(this, "countNFTpower", [address], [])}
+    {invoke(this, "distributeRewardsB", [address], [])}
     strict invoker = {FOLD<40>(list, [], r)}
+    strict bs = invoke(this, "burnSurf", [], [])
     []
 }
 
 @Callable(i)
-func distributeRewardsByAnybody(address:String)= 
+func distributeRewardsB(address:String)= 
 if (i.caller != this) then throw("access only by project owner") else
 {
     func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
@@ -308,7 +274,11 @@ if (i.caller != this) then throw("access only by project owner") else
     + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
     let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
 
-    if ((shareWFS + shareBBB) == 0) then
+    func foldFuncC(acc:Int, SURFboard:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(SURFboard))
+    + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
+    let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
+
+    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
     { 
         let list = split_4C(addresses, ",")
         let noNFTindex = value(indexOf(list, address))
@@ -318,22 +288,18 @@ if (i.caller != this) then throw("access only by project owner") else
     }
     else
 
-    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
-    let amountPuzzle = fraction(tryGetInteger(this, keyPuzzleAmount), (shareWFS + (shareBBB * 10)), tryGetInteger(this, keyTotalNFTpower))
+    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountPuzzle = fraction(tryGetInteger(this, keyPuzzleAmount), (shareWFS + (shareBBB * 10)), 110)
     [
     ScriptTransfer(addressFromStringValue(address), amountBurnxtn, burnxtn),
-    IntegerEntry(keyTotalBurnxtnPaid, amountBurnxtn + tryGetInteger(this, keyTotalBurnxtnPaid)),
     ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
-    IntegerEntry(keyTotalWhirlpoolPaid, amountWhirlpool + tryGetInteger(this, keyTotalWhirlpoolPaid)),
     ScriptTransfer(addressFromStringValue(address), amountWaves, unit),
-    IntegerEntry(keyTotalWavesPaid, amountWaves + tryGetInteger(this, keyTotalWavesPaid)),
     ScriptTransfer(addressFromStringValue(address), amountRome, rome),
-    IntegerEntry(keyTotalRomePaid, amountRome + tryGetInteger(this, keyTotalRomePaid)),
     ScriptTransfer(addressFromStringValue(address), amountPuzzle, puzzle),
-    IntegerEntry(keyTotalPuzzlePaid, amountPuzzle + tryGetInteger(this, keyTotalPuzzlePaid))
+    ScriptTransfer(addressFromStringValue(address), amountSURFboard * d6, surf)
     ]
 }
 
@@ -341,11 +307,6 @@ if (i.caller != this) then throw("access only by project owner") else
 func deleteEntry()= 
 if (i.caller != this) then throw("access only by project owner") else
     {[DeleteEntry(keyAddressesRegistered)]}
-
-@Callable(i)
-func addWFSid(WFSnumber:String, WFSassetId:String)= 
-if (i.caller != this) then throw("access only by project owner") else
-{[StringEntry(WFSnumber + "", WFSassetId)]}
 
 @Callable(i)
 func changeIntegerEntry(keyString:String, integer:Int)= 
