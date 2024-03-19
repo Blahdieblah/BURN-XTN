@@ -20,9 +20,6 @@ let pool2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
 let poolMega = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi'
 let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 
-#let NFT = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-#let keyTotalNFTpower = "Total NFT power"
-
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let burnxtnString = toBase58String(burnxtnId)
@@ -113,7 +110,7 @@ if (i.caller != this) then throw("access only by project owner") else{
     []}
 
 @Callable(i)
-func secondInvoke()=
+func thirdInvoke()=
 if (i.caller != this) then throw("access only by project owner") else
 {
     strict wavesBalanceBefore = wavesBalance(this).available
@@ -133,9 +130,11 @@ if (i.caller != this) then throw("access only by project owner") else
 }
 
 @Callable(i)
-func thirdInvoke()=
+func secondInvoke()=
+if (i.caller != this) then throw("access only by project owner") else
 {
-    strict stakeSurf = invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))])
+    strict stakeSurf = if assetBalance(this, surfId) > 0 then 
+      invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
     strict swapXTNtoVVXTNLP = swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
     [IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId))]
 }
