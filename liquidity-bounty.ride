@@ -20,6 +20,9 @@ func tryGetString (address:Address, key:String) = match getString(address, key) 
 let d6 = 1000000
 let d8 = 100000000
 
+#let selector = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
+let selector = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test
+
 let xtn = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let burnxtnString = toBase58String(burnxtn)
@@ -126,11 +129,21 @@ if tryGetInteger(this, keyAmountRegistered) >= 76 then throw("max registered use
 }
 
 @Callable(i)
-func updateBalanceEntry()=
+func invokeAll()=
 if (i.caller != this) then throw("access only by project owner") else
-if getBooleanValue(this, "reset") == false then throw("reset first") else
 {
-    let list = split_4C(tryGetString(this, keyAddressesRegistered), ",")
+  strict update = invoke(this, "updateBalanceEntry", [], [])
+  strict claim = invoke(this, "claimSwap", [], [])
+  strict total = invoke(this, "totalBalanceAll", [], [])
+  strict pay = invoke(this, "payRewards", [], [])
+  []
+}
+
+@Callable(i)
+func updateBalanceEntry()=
+if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+{
+    let list = split_4C((addresses), ",")
     func bal(accum:List[IntegerEntry], address:String)=
     {accum ++ [IntegerEntry(address, totalBalance(addressFromStringValue(address)))]}
     let updateBalance = {FOLD<76>(list, nil, bal)}
@@ -138,10 +151,17 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
 }
 
 @Callable(i)
-func claimSwap()=
-if (i.caller != this) then throw("access only by project owner") else
+func claim()=
+if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
 {
     strict claimInv = invoke(Address(PZ1), "claimIndexRewards", [], [])
+    []
+}
+
+@Callable(i)
+func swap()=
+if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+{
     strict swest = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
     strict svires = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
     strict segg = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
@@ -156,10 +176,9 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func totalBalanceAll()=
-if (i.caller != this) then throw("access only by project owner") else
-if getBooleanValue(this, "reset") == false then throw("reset first") else
+if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
 {
-    let list = split_4C(tryGetString(this, keyParticipants), ",")
+    let list = split_4C((addresses), ",")
     func ba(accum:Int, address:String)=
     {accum + totalBalance(addressFromStringValue(address))}
     let enterTotalBalanceAll = {FOLD<76>(list, 0, ba)}
@@ -168,8 +187,8 @@ if getBooleanValue(this, "reset") == false then throw("reset first") else
 
 @Callable(i)
 func payRewards()=
-if (i.caller != this) then throw("access only by project owner") else{
-    let list = split_4C(tryGetString(this, keyAddressesRegistered), ",")
+if (i.caller != this && i.caller != selector) then throw("access only by project owner") else{
+    let list = split_4C((addresses), ",")
     func pay(accum:List[ScriptTransfer], address:String)=
     {accum ++ [ScriptTransfer(addressFromStringValue(address), rewardAmount(address), burnxtn)]}
     let payReward = {FOLD<76>(list, nil, pay)}
