@@ -85,7 +85,7 @@ func invokeClI1()=
 if (i.caller != this) then throw("access only by project owner") else
 {
   strict cl = invoke(this, "claimInvestPuzzle", [], [])
-  strict i1 = invoke(this, "invoker1", [], [])
+  strict dt = invoke(this, "data", [], [])
   []
 }
 
@@ -93,13 +93,9 @@ if (i.caller != this) then throw("access only by project owner") else
 func claimInvestPuzzle()= 
 if (i.caller != this) then throw("access only by project owner") else
 {
-    #strict puzzleBalanceBefore = assetBalance(this, puzzle)
     strict romeBalanceBefore = assetBalance(this, rome)
-
     strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
     strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle,assetBalance(this, puzzle))])
-
-    #let puzzleBalanceAfter = assetBalance(this, puzzle)
     let romeBalanceAfter = assetBalance(this, rome)
     [
     IntegerEntry("Activated blockheight", height),
@@ -111,11 +107,14 @@ if (i.caller != this) then throw("access only by project owner") else
 }
 
 @Callable(i)
-func invoker1()= 
+func data()=
 if (i.caller != this) then throw("access only by project owner") else
 {
-    strict p = invoke(this, "data", [], [])
     [
+    IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
+    IntegerEntry("puzzle staked", puzzleStaked),
+    IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
+    IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle),
     IntegerEntry("WFS puzzle value", fraction(
       fraction(tryGetInteger(this, keyTotalPuzzleValue),
       1, 
@@ -128,17 +127,6 @@ if (i.caller != this) then throw("access only by project owner") else
       110),
         10,
         9))
-    ]
-}
-
-@Callable(i)
-func data()=
-{
-    [
-    IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
-    IntegerEntry("puzzle staked", puzzleStaked),
-    IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
-    IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle)
     ]}
 
 @Callable(i)
@@ -150,7 +138,6 @@ if (i.caller != this) then throw("access only by project owner") else
     func r(accum:List[Int], address:String)=
     {invoke(this, "distributeRewards", [address], [])}
     strict invoker = {FOLD<40>(list, [], r)}
-
     strict bs = invoke(this, "burnSurf", [], [])
     []
 }
@@ -224,9 +211,7 @@ if (i.caller != this) then throw("access only by project owner") else
 func register()=
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
 if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
-{
-  [StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]
-  }
+{[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]}
 
 @Callable(i)
 func claimByAnybody()=
