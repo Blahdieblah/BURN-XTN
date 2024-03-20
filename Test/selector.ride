@@ -17,6 +17,8 @@ let d16 = (d8 * d8)
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
 let project = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test 
 #let project = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
+let rewards = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
+let bounty = Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC')
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
@@ -145,6 +147,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func SURFandVVXTNLP()=
+if (i.caller != this) then throw("access only by project owner") else
 {
     strict stakeSurf = if (assetBalance(this, surfId) > 0) then
       invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
@@ -378,12 +381,79 @@ func selector()={
     if (tryGetInteger(this, keyInvokeNext) == 33) then invoke(this, "puzzlePZbbb", [], []) else
     if (tryGetInteger(this, keyInvokeNext) == 34) then invoke(this, "stakePZbbb", [], []) else
 
-    if (tryGetInteger(this, keyInvokeNext) == 40) then invoke(this, "dEntry", [], []) else unit   
+    if (tryGetInteger(this, keyInvokeNext) == 40) then invoke(this, "dEntry", [], []) else 
+
+    if (tryGetInteger(this, keyInvokeNext) == 50) then invoke(this, "rewards50", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 51) then invoke(this, "rewards51", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 52) then invoke(this, "rewards52", [], []) else
+
+    if (tryGetInteger(this, keyInvokeNext) == 60) then invoke(this, "bounty60", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 61) then invoke(this, "bounty61", [], []) else  
+    if (tryGetInteger(this, keyInvokeNext) == 62) then invoke(this, "bounty62", [], []) else  
+    if (tryGetInteger(this, keyInvokeNext) == 63) then invoke(this, "bounty63", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 64) then invoke(this, "bounty64", [], []) else    
+    unit   
     []
 }
 
 @Callable(i)
-func changeEntry()=
+func rewards50()=
 if (i.caller != this) then throw("access only by project owner") else {
-  [IntegerEntry(keyInvokeNext, 40)]
+  strict claim = invoke(rewards, "claimRewards", [], [])
+  [IntegerEntry(keyInvokeNext, 51)]
+}
+
+@Callable(i)
+func rewards51()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict pay = invoke(rewards, "shillerRewards", [], [])
+  [IntegerEntry(keyInvokeNext, 52)]
+}
+
+@Callable(i)
+func rewards52()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict pay = invoke(rewards, "adminRewards", [], [])
+  [IntegerEntry(keyInvokeNext, 60)]
+}
+
+@Callable(i)
+func bounty60()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict upd = invoke(bounty, "updateBalanceEntry", [], [])
+  [IntegerEntry(keyInvokeNext, 61)]
+}
+
+@Callable(i)
+func bounty61()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict claim = invoke(bounty, "claim", [], [])
+  [IntegerEntry(keyInvokeNext, 62)]
+}
+
+@Callable(i)
+func bounty62()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict swap = invoke(bounty, "swap", [], [])
+  [IntegerEntry(keyInvokeNext, 63)]
+}
+
+@Callable(i)
+func bounty63()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict total = invoke(bounty, "totalBalanceAll", [], [])
+  [IntegerEntry(keyInvokeNext, 64)]
+}
+
+@Callable(i)
+func bounty64()=
+if (i.caller != this) then throw("access only by project owner") else {
+  strict pay = invoke(bounty, "payRewards", [], [])
+  [IntegerEntry(keyInvokeNext, 70)]
+}
+
+@Callable(i)
+func changeEntry(InvokeNext:Int)=
+if (i.caller != this) then throw("access only by project owner") else {
+  [IntegerEntry(keyInvokeNext, InvokeNext)]
 }
