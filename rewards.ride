@@ -28,19 +28,20 @@ let wavesId = base58'WAVES'
 let shiller1 = Address(base58'3P3S2ugYddc7invK1FKwXkVehPpj6tjAJC7')
 let whirlpoolAddress = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
 let admin1 = Address(base58'3PHFAavxj2ePJqFB46H2aRGA7oQL6kz1rJJ')
-let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+#let selector = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
+let selector = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test
 #let admin2 = 
 
 @Callable(i)
 func claimRewards() = 
-if (i.caller != shiller1 && i.caller != invoker) then throw("no access") else {
+if (i.caller != shiller1 && i.caller != selector) then throw("no access") else {
   strict claimInv = invoke(Address(poolId), "claimIndexRewards", [], [])
   []
 }
 
 @Callable(i)
 func shillerRewards() = 
-if (i.caller != shiller1 && i.caller != invoker) then throw("no access") else {
+if (i.caller != shiller1 && i.caller != selector) then throw("no access") else {
   strict sxtn = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(xtnId,assetBalance(this, xtnId))])
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
@@ -57,7 +58,7 @@ else 0)])
 
 @Callable(i)
 func adminRewards() = 
-if (i.caller != invoker && i.caller != this) then throw("no access") else {
+if (i.caller != selector && i.caller != this) then throw("no access") else {
     strict claimInv = invoke(Address(poolBBB), "claimIndexRewards", [], [])
     strict amountBurnxtn = assetBalance(this, burnxtnId)
     strict amountWhirlpool = assetBalance(this, whirlpool)
