@@ -4,7 +4,9 @@
 {-# IMPORT artifacts/mainnet.ride #-}
 
 let keyInvokeNext = "invoke next"
+let keySelectorIsShutdown = "selector_is_shutdown"
 
+let d6 = 1000000
 let d8 = 100000000
 
 let projectB = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test 
@@ -214,6 +216,10 @@ func shutdown(shutdown:Boolean)=
 if (i.caller == this) then [BooleanEntry("is_shutdown", shutdown)] else throw("admin only")
 
 @Callable(i)
+func shutdownSelector(shutdown:Boolean)=
+if (i.caller == this) then [BooleanEntry(keySelectorIsShutdown, shutdown)] else throw("admin only")
+
+@Callable(i)
 func swap(amountOutMin: Int, AssetOut:String) = {
 if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
 
@@ -256,9 +262,57 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
   
   strict unstake = if (AssetOut == amId) then invoke(USDCdapp, "unstake", [totalGetRaw], []) else invoke(USDTdapp, "unstake", [totalGetRaw], [])
   strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
-  strict selector = invoke(this, "selector", [], [])
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else invoke(this, "selector", [], [])
   [ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId())]
-}       
+}
+
+@Callable(i)
+func readSwap(AssetIn:String, AmountIn: Int, AssetOut:String) = {
+if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
+
+  let amountIn = AmountIn
+  let feePoolAmount = fraction(amountIn, fee, feeScale)
+  let cleanAmountIn = amountIn - feePoolAmount
+  let assetIn = AssetIn
+  let isReverse = if (assetIn == amId) then false else true
+
+  let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
+    let assetOut = prId
+    let poolAmountInBalance = getAccBalance(amId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance)
+  } else {
+    let assetOut = amId
+    let poolAmountInBalance = getAccBalance(prId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance) 
+  }
+
+  let xp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt(), prId.getAccBalance().toBigInt()]
+  } else { 
+    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt()]
+  }
+  let D = xp.getD()
+  let y = getY(isReverse, D, toBigInt(0))
+  let dy = getAccBalance(AssetOut).toBigInt() - y - toBigInt(1)
+  let totalGetRaw = [0, dy.toInt()].max()
+
+  let newXp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() + feePoolAmount.toBigInt(), prId.getAccBalance().toBigInt() - dy]
+  } else { 
+    [amId.getAccBalance().toBigInt() - dy, prId.getAccBalance().toBigInt() + feePoolAmount.toBigInt()]
+  }
+  let newD = newXp.getD()
+  strict checkD = newD >= D || "new D is fewer error".throw()
+  [
+  StringEntry("asset id payment", AssetIn),
+  IntegerEntry("amount paid", AmountIn),
+  IntegerEntry("amount paid rounded without decimals", AmountIn / d6),
+  StringEntry("asset id to receive", AssetOut),
+  IntegerEntry("amount to receive", totalGetRaw),
+  IntegerEntry("amount to receive rounded without decimals", totalGetRaw / d6),
+  IntegerEntry("price", fraction(d6, AmountIn, totalGetRaw))
+  ]
+}   
 
 @Callable(i)
 func invoker() = {
@@ -279,7 +333,7 @@ func selector()={
     if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
     if (getIntegerValue(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
     if (getIntegerValue(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then 10 else 20)] else
+    if (getIntegerValue(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(projectB, "ATH in wavelets")) then 10 else 20)] else
 
     if (getIntegerValue(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
     if (getIntegerValue(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
@@ -343,9 +397,9 @@ func selector()={
 func balance_info()=
 {
   [
-  IntegerEntry("USDC", getAccBalance(amId)),
-  IntegerEntry("USDT", getAccBalance(prId)),
-  IntegerEntry("USD total", getAccBalance(amId) + getAccBalance(prId))
+  IntegerEntry("USDC", getAccBalance(amId) / d6),
+  IntegerEntry("USDT", getAccBalance(prId) / d6),
+  IntegerEntry("USD total", (getAccBalance(amId) + getAccBalance(prId)) / d6)
   ]
 }
 
