@@ -1,0 +1,353 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let keyInvokeNext = "invoke next"
+
+let d8 = 100000000
+
+let projectB = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test 
+#let projectB = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
+let rewards = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
+let bounty = Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC')
+
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+
+let USDTdapp = Address(base58'3PQtT2o7g8HmcZLGodx4L7YDe7ngb26wjYk')
+let USDCdapp = Address(base58'3PLrr8LpfYjUadnEQ1ov61uMWHdMopUCNAm')
+
+let scale8 = 100_000_000
+let scale8BigInt = 100_000_000.toBigInt()
+let scale18 = 1_000_000_000_000_000_000.toBigInt()
+let zeroBigInt = 0.toBigInt()
+let big0 = 0.toBigInt()
+let big1 = 1.toBigInt()
+let big2 = 2.toBigInt()
+let big3 = 3.toBigInt()
+let big4 = 4.toBigInt()
+let wavesString = "WAVES"
+
+let Amult = "100"
+
+func assetIdToString(input: ByteVector|Unit) = {
+  if (input == unit) then wavesString else input.value().toBase58String()
+}
+
+func absBigInt(val: BigInt) = if (val < zeroBigInt) then -val else val
+
+# getStringOrFail
+func strf(addr: Address, key: String) = addr.getString(key).valueOrErrorMessage(makeString(["mandatory ", addr.toString(), ".", key, " not defined"], ""))
+# getIntOrFail
+func intf(addr: Address, key: String) = addr.getInteger(key).valueOrErrorMessage(makeString(["mandatory ", addr.toString(), ".", key, " not defined"], ""))
+
+func throwErr(msg: String) = ["lp_stable.ride:", msg].makeString(" ").throw()
+func fmtErr(msg: String) = ["lp_stable.ride:", msg].makeString(" ")
+
+let amId = "3ayH3PhWMkhFsySsUVcC8BvFf1QyxGB5BZuTPyVtmP4v" # USDC-PPT
+let prId = "G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC" # USDT-PPT
+let amp = "amp"
+let A = "2000" # strf(this, amp)
+let fee = 1
+let feeScale = 10000
+
+func getAccBalance(assetId: String) = {
+  if(assetId == amId) 
+  then assetBalance(this, fromBase58String(assetId)) +  getIntegerValue(USDCdapp, "USER_LP__" + toString(this))
+  else assetBalance(this, fromBase58String(assetId)) +  getIntegerValue(USDTdapp, "USER_LP__" + toString(this))
+}
+
+func parseAssetId(input: String) = {
+  if (input == wavesString) then unit else input.fromBase58String()
+}
+
+func getD(xp: List[BigInt]) = {
+  let xp0 = xp[0]
+  let xp1 = xp[1]
+  let s = xp0 + xp1
+  if (s == big0) then big0 else {
+    let a = A.parseIntValue()
+    let ann = a * 2
+    let p = fraction(xp0, xp1, big1)
+    let xp0_xp1_n_n = fraction(p, big4, big1)
+    let ann_s = fraction(ann.toBigInt(), s, big1)
+    let ann_1 = (ann - 1).toBigInt()
+    func calcDNext(d: BigInt) = {
+      let dd = fraction(d, d, big1)
+      let ddd = fraction(dd, d, big1)
+      let dp = fraction(ddd, big1, xp0_xp1_n_n)
+      fraction(
+        ann_s + fraction(dp, big2, big1),
+        d,
+        fraction(ann_1, d, big1) + fraction(big3, dp, big1)
+      )
+    }
+    func calc(acc: (BigInt, Boolean), i: Int) = {
+      if (acc._2) then acc else {
+        let d = acc._1
+        let dNext = d.calcDNext()
+        let dDiffRaw = dNext - d.value()
+        let dDiff = if (dDiffRaw < big0) then -dDiffRaw else dDiffRaw
+        if (dDiff <= big1) then {
+          (dNext, true)
+        } else {
+          (dNext, false)
+        }
+      }
+    }
+    let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    let (d, found) = FOLD<17>(arr, (s, false), calc)
+    if (found) then {
+      d
+    } else {
+      { "D calculation error, D = " + d.toString() }.throw()
+    }
+  }
+}
+
+func getYD(xp: List[BigInt], i: Int, D: BigInt) = {
+  let n = big2
+  let x = xp[if (i == 0) then 1 else 0]
+  let aPrecision = Amult.parseBigIntValue()
+  let a = A.parseBigIntValue() * aPrecision
+  let s = x
+  let ann = a * n
+  let c = D * D / (x * n) * D * aPrecision / (ann * n)
+  let b = s + D * aPrecision / ann - D
+  func calc(acc: (BigInt, Int|Unit), cur: Int) = {
+    let (y, found) = acc
+    if (found != unit) then acc else {
+      let yNext = (y * y + c) / (big2 * y + b)
+      let yDiff = absBigInt(yNext - y.value())
+      if (yDiff <= big1) then {
+        (yNext, cur)
+      } else {
+        (yNext, unit)
+      }
+    }
+  }
+  let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  let (y, found) = FOLD<15>(arr, (D, unit), calc)
+  if (found != unit) then {
+    y
+  } else {
+    { "Y calculation error, Y = " + y.toString() }.throw()
+  }
+}
+
+func getY(isReverse: Boolean, D: BigInt, poolAmountInBalance: BigInt) = {
+  let n = big2
+  let aPrecision = Amult.parseBigIntValue()
+  let a = A.parseBigIntValue() * aPrecision
+  let xp = if (isReverse == false) then { 
+    [amId.getAccBalance().toBigInt() + poolAmountInBalance, prId.getAccBalance().toBigInt()]
+  } else {
+    [prId.getAccBalance().toBigInt() + poolAmountInBalance, amId.getAccBalance().toBigInt()]
+  }
+
+  let x = xp[0]
+  let s = x
+  let ann = a * n
+
+  let c = D * D / (x * n) * D * aPrecision / (ann * n)
+  let b = s + D * aPrecision / ann - D
+  func calc(acc: (BigInt, Int|Unit), cur: Int) = {
+      let (y, found) = acc
+      if (found != unit) then acc else {
+        let yNext = (y * y + c) / (big2 * y + b)
+        let yDiff = absBigInt(yNext - y.value())
+        if (yDiff <= big1) then {
+          (yNext, cur)
+        } else {
+          (yNext, unit)
+        }
+      }
+    }
+    let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    let (y, found) = FOLD<15>(arr, (D, unit), calc)
+    if (found != unit) then {
+      y
+    } else {
+      { "Y calculation error, Y = " + y.toString() }.throw()
+    }
+}
+
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX = wavesBalance(WX_BURNXTN_WAVES).regular + baseAmount
+let burnxtnInWX = assetBalance(WX_BURNXTN_WAVES, burnxtnId)
+let burnxtnwavesprice = fraction(d8 , wavesInWX, burnxtnInWX)
+
+func isShutdown()= {
+  match getBoolean(this, "is_shutdown") {
+    case x: Boolean => x
+    case _ => false
+  }
+}
+
+@Callable(i)
+func shutdown(shutdown:Boolean)=
+if (i.caller == this) then [BooleanEntry("is_shutdown", shutdown)] else throw("admin only")
+
+@Callable(i)
+func swap(amountOutMin: Int, AssetOut:String) = {
+if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
+
+  let pmt = i.payments[0].value()
+  let amountIn = i.payments[0].amount.value()
+  let feePoolAmount = fraction(amountIn, fee, feeScale)
+  let cleanAmountIn = amountIn - feePoolAmount
+  let assetIn = pmt.assetId.assetIdToString()
+  let isReverse = if (assetIn == amId) then false else true
+
+  let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
+    let assetOut = prId
+    let poolAmountInBalance = getAccBalance(amId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance)
+  } else {
+    let assetOut = amId
+    let poolAmountInBalance = getAccBalance(prId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance) 
+  }
+
+  let xp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt(), prId.getAccBalance().toBigInt()]
+  } else { 
+    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt()]
+  }
+  let D = xp.getD()
+  let y = getY(isReverse, D, toBigInt(0))
+  let dy = getAccBalance(AssetOut).toBigInt() - y - toBigInt(1)
+  let totalGetRaw = [0, dy.toInt()].max()
+
+  strict checkMin = amountOutMin <= totalGetRaw || "Exchange result is fewer coins than expected".throw()
+
+  let newXp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() + feePoolAmount.toBigInt(), prId.getAccBalance().toBigInt() - dy]
+  } else { 
+    [amId.getAccBalance().toBigInt() - dy, prId.getAccBalance().toBigInt() + feePoolAmount.toBigInt()]
+  }
+  let newD = newXp.getD()
+  strict checkD = newD >= D || "new D is fewer error".throw()
+  
+  strict unstake = if (AssetOut == amId) then invoke(USDCdapp, "unstake", [totalGetRaw], []) else invoke(USDTdapp, "unstake", [totalGetRaw], [])
+  strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
+  strict selector = invoke(this, "selector", [], [])
+  [ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId())]
+}       
+
+@Callable(i)
+func invoker() = {
+  strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
+  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
+    then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
+    else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
+  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
+  strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
+  []
+}
+
+@Callable(i)
+func selector()={
+    if (i.caller != this) then throw("no access") else
+    strict inv00 =
+    # BURN-XTN SC
+    if (tryGetInteger(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
+    if (tryGetInteger(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then 10 else 20)] else
+
+    if (tryGetInteger(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
+    if (tryGetInteger(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 11) then [IntegerEntry(keyInvokeNext, 12)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 12) then invoke(projectB, "grow2", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 12) then [IntegerEntry(keyInvokeNext, 13)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 13) then invoke(projectB, "grow3", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 13) then [IntegerEntry(keyInvokeNext, 14)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 14) then invoke(projectB, "grow4", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 14) then [IntegerEntry(keyInvokeNext, 15)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 15) then invoke(projectB, "grow5", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 15) then [IntegerEntry(keyInvokeNext, 16)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 16) then invoke(projectB, "grow6", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 16) then [IntegerEntry(keyInvokeNext, 30)] else  
+
+    if (tryGetInteger(this, keyInvokeNext) == 20) then invoke(projectB, "pump", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 20) then [IntegerEntry(keyInvokeNext, 30)] else  
+
+    if (tryGetInteger(this, keyInvokeNext) == 30) then invoke(projectB, "PZbbb", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 30) then [IntegerEntry(keyInvokeNext, 31)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 31) then invoke(projectB, "claimBBB", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 31) then [IntegerEntry(keyInvokeNext, 32)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 32) then invoke(projectB, "burnSURF", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 32) then [IntegerEntry(keyInvokeNext, 40)] else
+
+    # to be changed after SC update megapools
+    if (tryGetInteger(this, keyInvokeNext) == 33) then invoke(projectB, "puzzlePZbbb", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 33) then [IntegerEntry(keyInvokeNext, 34)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 34) then invoke(projectB, "stakePZbbb", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 34) then [IntegerEntry(keyInvokeNext, 35)] else  
+
+    if (tryGetInteger(this, keyInvokeNext) == 40) then invoke(projectB, "dEntry", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 40) then [IntegerEntry(keyInvokeNext, 50)] else  
+
+    # rewards SC
+    if (tryGetInteger(this, keyInvokeNext) == 50) then invoke(rewards, "claimRewards", [], []) else 
+    if (tryGetInteger(this, keyInvokeNext) == 50) then [IntegerEntry(keyInvokeNext, 51)] else 
+    if (tryGetInteger(this, keyInvokeNext) == 51) then invoke(rewards, "shillerRewards", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 51) then [IntegerEntry(keyInvokeNext, 52)] else
+    if (tryGetInteger(this, keyInvokeNext) == 52) then invoke(rewards, "adminRewards", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 52) then [IntegerEntry(keyInvokeNext, 60)] else
+
+    # bounty SC
+    if (tryGetInteger(this, keyInvokeNext) == 60) then invoke(bounty, "updateBalanceEntry", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 60) then [IntegerEntry(keyInvokeNext, 61)] else
+    if (tryGetInteger(this, keyInvokeNext) == 61) then invoke(bounty, "claim", [], []) else  
+    if (tryGetInteger(this, keyInvokeNext) == 61) then [IntegerEntry(keyInvokeNext, 62)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 62) then invoke(bounty, "swap", [], []) else  
+    if (tryGetInteger(this, keyInvokeNext) == 62) then [IntegerEntry(keyInvokeNext, 63)] else  
+    if (tryGetInteger(this, keyInvokeNext) == 63) then invoke(bounty, "totalBalanceAll", [], []) else
+    if (tryGetInteger(this, keyInvokeNext) == 63) then [IntegerEntry(keyInvokeNext, 64)] else
+
+    if (tryGetInteger(this, keyInvokeNext) == 64) then invoke(bounty, "payRewards", [], []) else    
+    if (tryGetInteger(this, keyInvokeNext) == 64) then [IntegerEntry(keyInvokeNext, 70)] else   
+    unit   
+    []
+}
+
+@Callable(i)
+func changeEntry(InvokeNext:Int)=
+if (i.caller != this) then throw("access only by project owner") else {
+  [IntegerEntry(keyInvokeNext, InvokeNext)]
+}
