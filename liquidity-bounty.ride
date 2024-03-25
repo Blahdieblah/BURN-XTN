@@ -20,8 +20,7 @@ func tryGetString (address:Address, key:String) = match getString(address, key) 
 let d6 = 1000000
 let d8 = 100000000
 
-#let selector = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
-let selector = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test
+let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
 
 let xtn = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
@@ -141,7 +140,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func updateBalanceEntry()=
-if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     let list = split_4C((addresses), ",")
     func bal(accum:List[IntegerEntry], address:String)=
@@ -152,7 +151,7 @@ if (i.caller != this && i.caller != selector) then throw("access only by project
 
 @Callable(i)
 func claim()=
-if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict claimInv = invoke(Address(PZ1), "claimIndexRewards", [], [])
     []
@@ -160,7 +159,7 @@ if (i.caller != this && i.caller != selector) then throw("access only by project
 
 @Callable(i)
 func swap()=
-if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict swest = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
     strict svires = invoke(Address(PZ1), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
@@ -176,7 +175,7 @@ if (i.caller != this && i.caller != selector) then throw("access only by project
 
 @Callable(i)
 func totalBalanceAll()=
-if (i.caller != this && i.caller != selector) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     let list = split_4C((addresses), ",")
     func ba(accum:Int, address:String)=
@@ -187,7 +186,7 @@ if (i.caller != this && i.caller != selector) then throw("access only by project
 
 @Callable(i)
 func payRewards()=
-if (i.caller != this && i.caller != selector) then throw("access only by project owner") else{
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else{
     let list = split_4C((addresses), ",")
     func pay(accum:List[ScriptTransfer], address:String)=
     {accum ++ [ScriptTransfer(addressFromStringValue(address), rewardAmount(address), burnxtn)]}
