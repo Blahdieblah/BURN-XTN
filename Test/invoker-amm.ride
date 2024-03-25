@@ -3,13 +3,6 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 {-# IMPORT artifacts/mainnet.ride #-}
 
-func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
-    case b: Int => 
-        b
-    case _ => 
-        0
-}
-
 let keyInvokeNext = "invoke next"
 
 let d8 = 100000000
@@ -283,67 +276,77 @@ func selector()={
     if (i.caller != this) then throw("no access") else
     strict inv00 =
     # BURN-XTN SC
-    if (tryGetInteger(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
-    if (tryGetInteger(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then 10 else 20)] else
+    if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
+    if (getIntegerValue(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then 10 else 20)] else
 
-    if (tryGetInteger(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
-    if (tryGetInteger(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 11) then [IntegerEntry(keyInvokeNext, 12)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 12) then invoke(projectB, "grow2", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 12) then [IntegerEntry(keyInvokeNext, 13)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 13) then invoke(projectB, "grow3", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 13) then [IntegerEntry(keyInvokeNext, 14)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 14) then invoke(projectB, "grow4", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 14) then [IntegerEntry(keyInvokeNext, 15)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 15) then invoke(projectB, "grow5", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 15) then [IntegerEntry(keyInvokeNext, 16)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 16) then invoke(projectB, "grow6", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 16) then [IntegerEntry(keyInvokeNext, 30)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
+    if (getIntegerValue(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 11) then [IntegerEntry(keyInvokeNext, 12)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 12) then invoke(projectB, "grow2", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 12) then [IntegerEntry(keyInvokeNext, 13)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 13) then invoke(projectB, "grow3", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 13) then [IntegerEntry(keyInvokeNext, 14)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 14) then invoke(projectB, "grow4", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 14) then [IntegerEntry(keyInvokeNext, 15)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 15) then invoke(projectB, "grow5", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 15) then [IntegerEntry(keyInvokeNext, 16)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 16) then invoke(projectB, "grow6", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 16) then [IntegerEntry(keyInvokeNext, 30)] else  
 
-    if (tryGetInteger(this, keyInvokeNext) == 20) then invoke(projectB, "pump", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 20) then [IntegerEntry(keyInvokeNext, 30)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 20) then invoke(projectB, "pump", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 20) then [IntegerEntry(keyInvokeNext, 30)] else  
 
-    if (tryGetInteger(this, keyInvokeNext) == 30) then invoke(projectB, "PZbbb", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 30) then [IntegerEntry(keyInvokeNext, 31)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 31) then invoke(projectB, "claimBBB", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 31) then [IntegerEntry(keyInvokeNext, 32)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 32) then invoke(projectB, "burnSURF", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 32) then [IntegerEntry(keyInvokeNext, 40)] else
+    if (getIntegerValue(this, keyInvokeNext) == 30) then invoke(projectB, "PZbbb", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 30) then [IntegerEntry(keyInvokeNext, 31)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 31) then invoke(projectB, "claimBBB", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 31) then [IntegerEntry(keyInvokeNext, 32)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 32) then invoke(projectB, "burnSURF", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 32) then [IntegerEntry(keyInvokeNext, 40)] else
 
     # to be changed after SC update megapools
-    if (tryGetInteger(this, keyInvokeNext) == 33) then invoke(projectB, "puzzlePZbbb", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 33) then [IntegerEntry(keyInvokeNext, 34)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 34) then invoke(projectB, "stakePZbbb", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 34) then [IntegerEntry(keyInvokeNext, 35)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 33) then invoke(projectB, "puzzlePZbbb", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 33) then [IntegerEntry(keyInvokeNext, 34)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 34) then invoke(projectB, "stakePZbbb", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 34) then [IntegerEntry(keyInvokeNext, 35)] else  
 
-    if (tryGetInteger(this, keyInvokeNext) == 40) then invoke(projectB, "dEntry", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 40) then [IntegerEntry(keyInvokeNext, 50)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 40) then invoke(projectB, "dEntry", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 40) then [IntegerEntry(keyInvokeNext, 50)] else  
 
     # rewards SC
-    if (tryGetInteger(this, keyInvokeNext) == 50) then invoke(rewards, "claimRewards", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 50) then [IntegerEntry(keyInvokeNext, 51)] else 
-    if (tryGetInteger(this, keyInvokeNext) == 51) then invoke(rewards, "shillerRewards", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 51) then [IntegerEntry(keyInvokeNext, 52)] else
-    if (tryGetInteger(this, keyInvokeNext) == 52) then invoke(rewards, "adminRewards", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 52) then [IntegerEntry(keyInvokeNext, 60)] else
+    if (getIntegerValue(this, keyInvokeNext) == 50) then invoke(rewards, "claimRewards", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 50) then [IntegerEntry(keyInvokeNext, 51)] else 
+    if (getIntegerValue(this, keyInvokeNext) == 51) then invoke(rewards, "shillerRewards", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 51) then [IntegerEntry(keyInvokeNext, 52)] else
+    if (getIntegerValue(this, keyInvokeNext) == 52) then invoke(rewards, "adminRewards", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 52) then [IntegerEntry(keyInvokeNext, 60)] else
 
     # bounty SC
-    if (tryGetInteger(this, keyInvokeNext) == 60) then invoke(bounty, "updateBalanceEntry", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 60) then [IntegerEntry(keyInvokeNext, 61)] else
-    if (tryGetInteger(this, keyInvokeNext) == 61) then invoke(bounty, "claim", [], []) else  
-    if (tryGetInteger(this, keyInvokeNext) == 61) then [IntegerEntry(keyInvokeNext, 62)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 62) then invoke(bounty, "swap", [], []) else  
-    if (tryGetInteger(this, keyInvokeNext) == 62) then [IntegerEntry(keyInvokeNext, 63)] else  
-    if (tryGetInteger(this, keyInvokeNext) == 63) then invoke(bounty, "totalBalanceAll", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 63) then [IntegerEntry(keyInvokeNext, 64)] else
+    if (getIntegerValue(this, keyInvokeNext) == 60) then invoke(bounty, "updateBalanceEntry", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 60) then [IntegerEntry(keyInvokeNext, 61)] else
+    if (getIntegerValue(this, keyInvokeNext) == 61) then invoke(bounty, "claim", [], []) else  
+    if (getIntegerValue(this, keyInvokeNext) == 61) then [IntegerEntry(keyInvokeNext, 62)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 62) then invoke(bounty, "swap", [], []) else  
+    if (getIntegerValue(this, keyInvokeNext) == 62) then [IntegerEntry(keyInvokeNext, 63)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 63) then invoke(bounty, "totalBalanceAll", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 63) then [IntegerEntry(keyInvokeNext, 64)] else
 
-    if (tryGetInteger(this, keyInvokeNext) == 64) then invoke(bounty, "payRewards", [], []) else    
-    if (tryGetInteger(this, keyInvokeNext) == 64) then [IntegerEntry(keyInvokeNext, 70)] else   
+    if (getIntegerValue(this, keyInvokeNext) == 64) then invoke(bounty, "payRewards", [], []) else    
+    if (getIntegerValue(this, keyInvokeNext) == 64) then [IntegerEntry(keyInvokeNext, 70)] else   
     unit   
     []
+}
+
+@Callable(i)
+func balance_info()=
+{
+  [
+  IntegerEntry("USDC", getAccBalance(amId)),
+  IntegerEntry("USDT", getAccBalance(prId)),
+  IntegerEntry("USD total", getAccBalance(amId) + getAccBalance(prId))
+  ]
 }
 
 @Callable(i)
