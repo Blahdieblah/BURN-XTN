@@ -120,17 +120,17 @@ let VVXTNLPprice = fraction(XTNbalance, 100, VVXTNLPbalance)
 
 @Callable(i)
 func PZbbb()=
-if (i.caller != this) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict swapSwop = invoke(Address(poolId), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(swopId, assetBalance(this, swopId))])
     strict inv =  if (assetBalance(this, burnxtnId) > 0) then
       invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(burnxtnId, assetBalance(this, burnxtnId))]) else unit
-    [IntegerEntry(keyInvokeNext, 31)]
+  []
 }
 
 @Callable(i)
 func burnSURF()=
-if (i.caller != this) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict swapWhirl = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(whirlpool, assetBalance(this, whirlpool))])
     strict swapRome = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(rome, assetBalance(this, rome))])    
@@ -140,25 +140,25 @@ if (i.caller != this) then throw("access only by project owner") else
     let surfBurn = Burn(surfId, surfBurnAmount)
     [
     surfBurn,
-    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount),
-    IntegerEntry(keyInvokeNext, 40) # 33
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
     ]
 }
 
 @Callable(i)
 func SURFandVVXTNLP()=
-if (i.caller != this) then throw("access only by project owner") else
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict stakeSurf = if (assetBalance(this, surfId) > 0) then
       invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
     strict swapXTNtoVVXTNLP = if (assetBalance(this, xtnId) > 0) && (VVXTNLPprice < 80) then 
       swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
-    [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then 10 else 20)]
+    []
 }
 
 @Callable(i)
 func dEntry() =
-if (i.caller != this) then throw("access only by project owner") else{
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
+{
     [
     IntegerEntry("BURN-XTN / WAVES price in wavelets", burnxtnwavesprice),
     IntegerEntry("Price growth %", pricegrowth),
@@ -183,24 +183,20 @@ if (i.caller != this) then throw("access only by project owner") else{
         asset.quantity / d6
     case _ => throw("Can't find asset") 
     }),
-    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId)),
-    IntegerEntry(keyInvokeNext, 0)
+    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId))
     ]
 }
 
 @Callable(i)
 func burnBURNXTN()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
-  [
-  burnxtnBurn,
-  IntegerEntry(keyInvokeNext, 11)
-  ]
+  [burnxtnBurn]
 }
 
 @Callable(i)
 func pump()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
   strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
@@ -208,10 +204,7 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
     then wavesBalance(this).available - d8
     else 0)])
-    [
-    Burn(burnxtnId, assetBalance(this, burnxtnId)),
-    IntegerEntry(keyInvokeNext, 30)
-    ]
+    [Burn(burnxtnId, assetBalance(this, burnxtnId))]
 }
 
 # If func dEntry is not invoked in 8 days, then function PumpByAnybody, can be called by anybody. (This is tokenomics mode: burn XTN fees, buyback & burn BURN-XTN).
@@ -251,7 +244,7 @@ IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtn
 
 @Callable(i)
 func withdraw() = {
-  if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+  if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
   strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
   []
 }
@@ -259,14 +252,14 @@ func withdraw() = {
 @Callable(i)
 func importVVXTNLP()=
 {
-    if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+    if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
     strict import = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "importLP", [], [AttachedPayment(vvxtnlp, assetBalance(this, vvxtnlp))])
     []
 }
 
 @Callable(i)
 func burnXTNandClaim() = 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict invc = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   let xtnburnamount = assetBalance(this, xtnId)
   let xtnBurn = Burn(xtnId, xtnburnamount)
@@ -277,29 +270,25 @@ if (i.caller != this) then throw("access only by project owner") else {
     case asset:Asset =>
         (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
     case _ => throw("Can't find asset")
-    }),
-    IntegerEntry(keyInvokeNext, 01)
+    })
     ]
 }
 
 @Callable(i)
 func claimBBB()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
     strict wavesBalanceBefore = wavesBalance(this).available
     strict claimInv = invoke(addressFromStringValue(toBase58String(poolBBB)), "claimIndexRewards", [], [])
     let wavesDifference = wavesBalance(this).available - wavesBalanceBefore
-    [
-    IntegerEntry(keyInvokeNext, 32),
-    IntegerEntry("waves amount to swap", wavesDifference)
-    ]
+    [IntegerEntry("waves amount to swap", wavesDifference)]
 }
 
 @Callable(i)
 func puzzlePZbbb()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict spuzzle = if (assetBalance(this, puzzle) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolBBB], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
-  [IntegerEntry(keyInvokeNext, 40)] # 34
+  []
 }
 
 @Callable(i)
@@ -307,23 +296,23 @@ func stakePZbbb()=
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
     invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
-  [IntegerEntry(keyInvokeNext, 40)]
+  []
 }
 
 @Callable(i)
 func grow1()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict swest = if (assetBalance(this, westId) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolString], [AttachedPayment(westId,assetBalance(this, westId))]) else unit
-  [IntegerEntry(keyInvokeNext, 12)]
+  []
 }
 
 @Callable(i)
 func grow2()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict svires = if (assetBalance(this, viresId) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolString], [AttachedPayment(viresId,assetBalance(this, viresId))]) else unit
-  [IntegerEntry(keyInvokeNext, 13)]
+  []
 }
 
 @Callable(i)
@@ -331,23 +320,23 @@ func grow3()=
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict segg = if (assetBalance(this, eggId) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolString], [AttachedPayment(eggId,assetBalance(this, eggId))]) else unit
-  [IntegerEntry(keyInvokeNext, 14)]
+  []
 }
 
 @Callable(i)
 func grow4()= 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict snsbt = if (assetBalance(this, nsbtId) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolString], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))]) else unit
-  [IntegerEntry(keyInvokeNext, 15)]
+  []
 }
 
 @Callable(i)
 func grow5()=
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict swapwaves = if (wavesBalance(this).available - d8 > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [poolString], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
-  [IntegerEntry(keyInvokeNext, 16)]
+  []
 }
 
 @Callable(i)
@@ -355,105 +344,5 @@ func grow6()=
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict stakePZburnxtn = if (assetBalance(this, pzBurnxtn) > 0) then
     invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBurnxtn, assetBalance(this, pzBurnxtn))]) else unit
-  [IntegerEntry(keyInvokeNext, 30)]
-}
-
-@Callable(i)
-func selector()={
-    if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
-    strict inv00 =
-    if (tryGetInteger(this, keyInvokeNext) == 0) then invoke(this, "burnXTNandClaim", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 01) then invoke(this, "SURFandVVXTNLP", [], []) else
-
-    if (tryGetInteger(this, keyInvokeNext) == 10) then invoke(this, "burnBURNXTN", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 11) then invoke(this, "grow1", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 12) then invoke(this, "grow2", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 13) then invoke(this, "grow3", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 14) then invoke(this, "grow4", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 15) then invoke(this, "grow5", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 16) then invoke(this, "grow6", [], []) else
-
-    if (tryGetInteger(this, keyInvokeNext) == 20) then invoke(this, "pump", [], []) else
-
-    if (tryGetInteger(this, keyInvokeNext) == 30) then invoke(this, "PZbbb", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 31) then invoke(this, "claimBBB", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 32) then invoke(this, "burnSURF", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 33) then invoke(this, "puzzlePZbbb", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 34) then invoke(this, "stakePZbbb", [], []) else
-
-    if (tryGetInteger(this, keyInvokeNext) == 40) then invoke(this, "dEntry", [], []) else 
-
-    if (tryGetInteger(this, keyInvokeNext) == 50) then invoke(this, "rewards50", [], []) else 
-    if (tryGetInteger(this, keyInvokeNext) == 51) then invoke(this, "rewards51", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 52) then invoke(this, "rewards52", [], []) else
-
-    if (tryGetInteger(this, keyInvokeNext) == 60) then invoke(this, "bounty60", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 61) then invoke(this, "bounty61", [], []) else  
-    if (tryGetInteger(this, keyInvokeNext) == 62) then invoke(this, "bounty62", [], []) else  
-    if (tryGetInteger(this, keyInvokeNext) == 63) then invoke(this, "bounty63", [], []) else
-    if (tryGetInteger(this, keyInvokeNext) == 64) then invoke(this, "bounty64", [], []) else    
-    unit   
-    []
-}
-
-@Callable(i)
-func rewards50()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict claim = invoke(rewards, "claimRewards", [], [])
-  [IntegerEntry(keyInvokeNext, 51)]
-}
-
-@Callable(i)
-func rewards51()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict pay = invoke(rewards, "shillerRewards", [], [])
-  [IntegerEntry(keyInvokeNext, 52)]
-}
-
-@Callable(i)
-func rewards52()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict pay = invoke(rewards, "adminRewards", [], [])
-  [IntegerEntry(keyInvokeNext, 60)]
-}
-
-@Callable(i)
-func bounty60()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict upd = invoke(bounty, "updateBalanceEntry", [], [])
-  [IntegerEntry(keyInvokeNext, 61)]
-}
-
-@Callable(i)
-func bounty61()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict claim = invoke(bounty, "claim", [], [])
-  [IntegerEntry(keyInvokeNext, 62)]
-}
-
-@Callable(i)
-func bounty62()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict swap = invoke(bounty, "swap", [], [])
-  [IntegerEntry(keyInvokeNext, 63)]
-}
-
-@Callable(i)
-func bounty63()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict total = invoke(bounty, "totalBalanceAll", [], [])
-  [IntegerEntry(keyInvokeNext, 64)]
-}
-
-@Callable(i)
-func bounty64()=
-if (i.caller != this) then throw("access only by project owner") else {
-  strict pay = invoke(bounty, "payRewards", [], [])
-  [IntegerEntry(keyInvokeNext, 70)]
-}
-
-@Callable(i)
-func changeEntry(InvokeNext:Int)=
-if (i.caller != this) then throw("access only by project owner") else {
-  [IntegerEntry(keyInvokeNext, InvokeNext)]
+  []
 }
