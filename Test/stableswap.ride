@@ -295,6 +295,14 @@ func balance_info()=
 }
 
 @Callable(i)
+func claimAll()=
+if (i.caller != this) && (i.caller != invoker) then throw("access only by project owner") else{
+    strict usdc = invoke(USDCdapp, "claimAll ", [toString(this)], [])
+    strict usdt = invoke(USDTdapp, "claimAll ", [toString(this)], [])
+  []
+}
+
+@Callable(i)
 func reset_trading_volume()=
 if (i.caller != this) then throw("access only by project owner") else{
 [IntegerEntry(keyTradingVolume, 0)]}
