@@ -25,6 +25,7 @@ let prId = "G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC" # USDT-PPT
 let amp = "amp"
 let A = "2000"
 let keyTradingVolume = "total trading volume centlets"
+let keyInvokeNext = "invoke next"
 
 let fee = 1
 let feeScale = 10000
@@ -227,7 +228,8 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
       else if totalGetRaw > assetBalance(this, base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC') then
       invoke(USDTdapp, "unstake", [totalGetRaw - assetBalance(this, base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC')], []) else unit
   strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
-  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else invoke(invoker, "selector", [], [])
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else 
+    if (getIntegerValue(invoker, keyInvokeNext) == 70) then invoke(this, "claimAll", [], []) else invoke(invoker, "selector", [], [])
   [
   ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId()),
   IntegerEntry(keyTradingVolume, amountIn + tryGetInteger(this, keyTradingVolume))
@@ -296,9 +298,9 @@ func balance_info()=
 
 @Callable(i)
 func claimAll()=
-if (i.caller != this) && (i.caller != invoker) then throw("access only by project owner") else{
-    strict usdc = invoke(USDCdapp, "claimAll ", [toString(this)], [])
-    strict usdt = invoke(USDTdapp, "claimAll ", [toString(this)], [])
+if (i.caller != this) then throw("access only by project owner") else{
+    strict usdc = invoke(USDCdapp, "claimAll", ["3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9"], [])
+    strict usdt = invoke(USDTdapp, "claimAll", ["3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9"], [])
   []
 }
 
