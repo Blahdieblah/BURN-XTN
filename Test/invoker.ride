@@ -87,7 +87,7 @@ func selector()={
 
     # rewards SC
     if (getIntegerValue(this, keyInvokeNext) == 50) then invoke(rewards, "claimRewards", [], []) else  
-    if (getIntegerValue(this, keyInvokeNext) == 51) then invoke(rewards, "shillerRewards", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 51) then invoke(rewards, "loyaltyRewards", [], []) else
     if (getIntegerValue(this, keyInvokeNext) == 52) then invoke(rewards, "adminRewards", [], []) else
 
     # bounty SC
