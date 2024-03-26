@@ -99,8 +99,8 @@ func selector()={
     unit
 
     # claim USDT/C SC
-    strict usdc = if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(USDCdapp, "claimAll ", [toString(this)], []) else unit  
-    strict usdt = if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(USDTdapp, "claimAll ", [toString(this)], []) else unit
+    strict usdc = if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(stableswap, "claimAll ", [], []) else unit  
+    strict usdt = if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(stableswap, "claimAll ", [], []) else unit
     [
     IntegerEntry(keyInvokeNext, 
       if (getIntegerValue(this, keyInvokeNext) == 0) then 01 else
