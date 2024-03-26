@@ -172,7 +172,7 @@ func shutdownSelector(shutdown:Boolean)=
 if (i.caller == this) then [BooleanEntry(keySelectorIsShutdown, shutdown)] else throw("admin only")
 
 @Callable(i)
-func swap(amountOutMin: Int, AssetOut:String) = {
+func swap(amountOutMin: Int) = {
 if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
 
   let pmt = i.payments[0].value()
@@ -181,6 +181,7 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
   let cleanAmountIn = amountIn - feePoolAmount
   let assetIn = pmt.assetId.assetIdToString()
   let isReverse = if (assetIn == amId) then false else true
+  let AssetOut = if (assetIn == amId) then prId else amId
 
   let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
     let assetOut = prId
@@ -212,7 +213,11 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
   let newD = newXp.getD()
   strict checkD = newD >= D || "new D is fewer error".throw()
   
-  strict unstake = if (AssetOut == amId) then invoke(USDCdapp, "unstake", [totalGetRaw], []) else invoke(USDTdapp, "unstake", [totalGetRaw], [])
+  strict unstake = if (AssetOut == amId) then 
+    if totalGetRaw > assetBalance(this, base58'3ayH3PhWMkhFsySsUVcC8BvFf1QyxGB5BZuTPyVtmP4v') then
+    invoke(USDCdapp, "unstake", [totalGetRaw - assetBalance(this, base58'3ayH3PhWMkhFsySsUVcC8BvFf1QyxGB5BZuTPyVtmP4v')], []) else unit
+      else if totalGetRaw > assetBalance(this, base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC') then
+      invoke(USDTdapp, "unstake", [totalGetRaw - assetBalance(this, base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC')], []) else unit
   strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
   strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else invoke(invoker, "selector", [], [])
   [ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId())]
