@@ -15,10 +15,6 @@ let d8 = 100000000
 let d16 = (d8 * d8)
 
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
-let project = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test 
-#let project = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
-let rewards = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
-let bounty = Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC')
 
 let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
 let poolString = toBase58String(poolId)
@@ -51,8 +47,6 @@ let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
 let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
 let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
-
-let keyInvokeNext = "invoke next"
 
 # calculate value of sWAVES to WAVES
 let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
@@ -287,7 +281,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func puzzlePZbbb()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else {
   strict spuzzle = if (assetBalance(this, puzzle) > 0) then
-    invoke(Address(poolLP), "generateWithOneToken", [poolBBB], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
+    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
   []
 }
 
