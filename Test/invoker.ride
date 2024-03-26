@@ -65,20 +65,15 @@ func selector()={
     strict inv00 =
     # BURN-XTN SC
     if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
     if (getIntegerValue(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(projectB, "ATH in wavelets")) then 10 else 20)] else
 
     if (getIntegerValue(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
-    if (getIntegerValue(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 11) then [IntegerEntry(keyInvokeNext, 12)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else 
     if (getIntegerValue(this, keyInvokeNext) == 12) then invoke(projectB, "grow2", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 12) then [IntegerEntry(keyInvokeNext, 13)] else  
     if (getIntegerValue(this, keyInvokeNext) == 13) then invoke(projectB, "grow3", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 13) then [IntegerEntry(keyInvokeNext, 14)] else  
+     
     if (getIntegerValue(this, keyInvokeNext) == 14) then invoke(projectB, "grow4", [], []) else
-    if (getIntegerValue(this, keyInvokeNext) == 14) then [IntegerEntry(keyInvokeNext, 15)] else  
+    
     if (getIntegerValue(this, keyInvokeNext) == 15) then invoke(projectB, "grow5", [], []) else
     if (getIntegerValue(this, keyInvokeNext) == 15) then [IntegerEntry(keyInvokeNext, 16)] else  
     if (getIntegerValue(this, keyInvokeNext) == 16) then invoke(projectB, "grow6", [], []) else
@@ -128,7 +123,18 @@ func selector()={
     if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(USDTdapp, "claimAll ", [toString(this)], []) else  
     if (getIntegerValue(this, keyInvokeNext) == 70) then [IntegerEntry(keyInvokeNext, 0)] else
     unit   
-    []
+    [
+    IntegerEntry(keyInvokeNext, 
+      if (getIntegerValue(this, keyInvokeNext) == 0) then 01 else
+      if (getIntegerValue(this, keyInvokeNext) == 01) then 
+        if (burnxtnwavesprice >= getIntegerValue(projectB, "ATH in wavelets")) then 10 else 20 else
+      if (getIntegerValue(this, keyInvokeNext) == 10) then 11 else 
+      if (getIntegerValue(this, keyInvokeNext) == 11) then 12 else 
+      if (getIntegerValue(this, keyInvokeNext) == 12) then 13 else  
+      if (getIntegerValue(this, keyInvokeNext) == 13) then 14 else 
+      if (getIntegerValue(this, keyInvokeNext) == 14) then 15 else  
+      0
+    )]
 }
 
 @Callable(i)
