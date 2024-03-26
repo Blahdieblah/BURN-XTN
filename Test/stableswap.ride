@@ -24,10 +24,18 @@ let amId = "3ayH3PhWMkhFsySsUVcC8BvFf1QyxGB5BZuTPyVtmP4v" # USDC-PPT
 let prId = "G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC" # USDT-PPT
 let amp = "amp"
 let A = "2000"
+let keyTradingVolume = "total trading volume centlets"
 
 let fee = 1
 let feeScale = 10000
 let d6 = 1000000
+
+func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
 
 func assetIdToString(input: ByteVector|Unit) = {
   if (input == unit) then wavesString else input.value().toBase58String()
@@ -220,18 +228,23 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
       invoke(USDTdapp, "unstake", [totalGetRaw - assetBalance(this, base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC')], []) else unit
   strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
   strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else invoke(invoker, "selector", [], [])
-  [ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId())]
+  [
+  ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId()),
+  IntegerEntry(keyTradingVolume, amountIn + tryGetInteger(this, keyTradingVolume))
+  ]
 }
 
 @Callable(i)
-func readSwap(AssetIn:String, AmountIn: Int, AssetOut:String) = {
+func readSwap(AssetIn:String, AmountIn: Int) = {
 if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
 
-  let amountIn = AmountIn
+  let pmt = i.payments[0].value()
+  let amountIn = if i.payments[0].amount.value() < d6/10 then throw("minimum 0.1") else i.payments[0].amount.value()
   let feePoolAmount = fraction(amountIn, fee, feeScale)
   let cleanAmountIn = amountIn - feePoolAmount
-  let assetIn = AssetIn
+  let assetIn = if (pmt.assetId.assetIdToString() == amId || pmt.assetId.assetIdToString() == prId) then pmt.assetId.assetIdToString() else throw("wrong asset id")
   let isReverse = if (assetIn == amId) then false else true
+  let AssetOut = if (assetIn == amId) then prId else amId
 
   let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
     let assetOut = prId
@@ -280,3 +293,8 @@ func balance_info()=
   IntegerEntry("USD total", (getAccBalance(amId) + getAccBalance(prId)) / d6)
   ]
 }
+
+@Callable(i)
+func reset_trading_volume()=
+if (i.caller != this) then throw("access only by project owner") else{
+[IntegerEntry(keyTradingVolume, 0)]}
