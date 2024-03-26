@@ -1,0 +1,138 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let keyInvokeNext = "invoke next"
+
+let d6 = 1000000
+let d8 = 100000000
+
+let projectB = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') # test 
+#let projectB = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') # live
+let rewards = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
+let bounty = Address(base58'3PJXxPS9FxZsSLyP9gA47dSLwMinoFyfYFC')
+let stableswap = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
+let USDTdapp = Address(base58'3PQtT2o7g8HmcZLGodx4L7YDe7ngb26wjYk')
+let USDCdapp = Address(base58'3PLrr8LpfYjUadnEQ1ov61uMWHdMopUCNAm')
+
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX = wavesBalance(WX_BURNXTN_WAVES).regular + baseAmount
+let burnxtnInWX = assetBalance(WX_BURNXTN_WAVES, burnxtnId)
+let burnxtnwavesprice = fraction(d8 , wavesInWX, burnxtnInWX)
+
+@Callable(i)
+func invoker() = {
+  strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
+  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
+    then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
+    else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
+  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
+  strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
+  []
+}
+
+@Callable(i)
+func selector()={
+    if (i.caller != this && i.caller != stableswap) then throw("no access") else
+    strict inv00 =
+    # BURN-XTN SC
+    if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(projectB, "burnXTNandClaim", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 0) then [IntegerEntry(keyInvokeNext, 01)] else
+    if (getIntegerValue(this, keyInvokeNext) == 01) then invoke(projectB, "SURFandVVXTNLP", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 01) then [IntegerEntry(keyInvokeNext, if (burnxtnwavesprice >= getIntegerValue(projectB, "ATH in wavelets")) then 10 else 20)] else
+
+    if (getIntegerValue(this, keyInvokeNext) == 10) then invoke(projectB, "burnBURNXTN", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 10) then [IntegerEntry(keyInvokeNext, 11)] else    
+    if (getIntegerValue(this, keyInvokeNext) == 11) then invoke(projectB, "grow1", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 11) then [IntegerEntry(keyInvokeNext, 12)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 12) then invoke(projectB, "grow2", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 12) then [IntegerEntry(keyInvokeNext, 13)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 13) then invoke(projectB, "grow3", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 13) then [IntegerEntry(keyInvokeNext, 14)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 14) then invoke(projectB, "grow4", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 14) then [IntegerEntry(keyInvokeNext, 15)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 15) then invoke(projectB, "grow5", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 15) then [IntegerEntry(keyInvokeNext, 16)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 16) then invoke(projectB, "grow6", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 16) then [IntegerEntry(keyInvokeNext, 30)] else  
+
+    if (getIntegerValue(this, keyInvokeNext) == 20) then invoke(projectB, "pump", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 20) then [IntegerEntry(keyInvokeNext, 30)] else  
+
+    if (getIntegerValue(this, keyInvokeNext) == 30) then invoke(projectB, "PZbbb", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 30) then [IntegerEntry(keyInvokeNext, 31)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 31) then invoke(projectB, "claimBBB", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 31) then [IntegerEntry(keyInvokeNext, 32)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 32) then invoke(projectB, "burnSURF", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 32) then [IntegerEntry(keyInvokeNext, 33)] else
+    if (getIntegerValue(this, keyInvokeNext) == 33) then invoke(projectB, "puzzlePZbbb", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 33) then [IntegerEntry(keyInvokeNext, 40)] else   # 34 to be changed after SC update megapools
+
+    if (getIntegerValue(this, keyInvokeNext) == 34) then invoke(projectB, "stakePZbbb", [], []) else # inactive
+    if (getIntegerValue(this, keyInvokeNext) == 34) then [IntegerEntry(keyInvokeNext, 35)] else  
+
+    if (getIntegerValue(this, keyInvokeNext) == 40) then invoke(projectB, "dEntry", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 40) then [IntegerEntry(keyInvokeNext, 50)] else  
+
+    # rewards SC
+    if (getIntegerValue(this, keyInvokeNext) == 50) then invoke(rewards, "claimRewards", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 50) then [IntegerEntry(keyInvokeNext, 51)] else 
+    if (getIntegerValue(this, keyInvokeNext) == 51) then invoke(rewards, "shillerRewards", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 51) then [IntegerEntry(keyInvokeNext, 52)] else
+    if (getIntegerValue(this, keyInvokeNext) == 52) then invoke(rewards, "adminRewards", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 52) then [IntegerEntry(keyInvokeNext, 60)] else
+
+    # bounty SC
+    if (getIntegerValue(this, keyInvokeNext) == 60) then invoke(bounty, "updateBalanceEntry", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 60) then [IntegerEntry(keyInvokeNext, 61)] else
+    if (getIntegerValue(this, keyInvokeNext) == 61) then invoke(bounty, "claim", [], []) else  
+    if (getIntegerValue(this, keyInvokeNext) == 61) then [IntegerEntry(keyInvokeNext, 62)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 62) then invoke(bounty, "swap", [], []) else  
+    if (getIntegerValue(this, keyInvokeNext) == 62) then [IntegerEntry(keyInvokeNext, 63)] else  
+    if (getIntegerValue(this, keyInvokeNext) == 63) then invoke(bounty, "totalBalanceAll", [], []) else
+    if (getIntegerValue(this, keyInvokeNext) == 63) then [IntegerEntry(keyInvokeNext, 64)] else
+
+    if (getIntegerValue(this, keyInvokeNext) == 64) then invoke(bounty, "payRewards", [], []) else    
+    if (getIntegerValue(this, keyInvokeNext) == 64) then [IntegerEntry(keyInvokeNext, 70)] else
+
+    # claim USDT/C SC
+    if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(USDCdapp, "claimAll ", [toString(this)], []) else    
+    if (getIntegerValue(this, keyInvokeNext) == 70) then invoke(USDTdapp, "claimAll ", [toString(this)], []) else  
+    if (getIntegerValue(this, keyInvokeNext) == 70) then [IntegerEntry(keyInvokeNext, 0)] else
+    unit   
+    []
+}
+
+@Callable(i)
+func changeEntry(InvokeNext:Int)=
+if (i.caller != this) then throw("access only by project owner") else {
+  [IntegerEntry(keyInvokeNext, InvokeNext)]
+}
