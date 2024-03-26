@@ -1,0 +1,277 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+let USDTdapp = Address(base58'3PQtT2o7g8HmcZLGodx4L7YDe7ngb26wjYk')
+let USDCdapp = Address(base58'3PLrr8LpfYjUadnEQ1ov61uMWHdMopUCNAm')
+
+let scale8 = 100_000_000
+let scale8BigInt = 100_000_000.toBigInt()
+let scale18 = 1_000_000_000_000_000_000.toBigInt()
+let zeroBigInt = 0.toBigInt()
+let big0 = 0.toBigInt()
+let big1 = 1.toBigInt()
+let big2 = 2.toBigInt()
+let big3 = 3.toBigInt()
+let big4 = 4.toBigInt()
+
+let wavesString = "WAVES"
+let Amult = "100"
+let keySelectorIsShutdown = "selector_is_shutdown"
+let amId = "3ayH3PhWMkhFsySsUVcC8BvFf1QyxGB5BZuTPyVtmP4v" # USDC-PPT
+let prId = "G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC" # USDT-PPT
+let amp = "amp"
+let A = "2000"
+
+let fee = 1
+let feeScale = 10000
+let d6 = 1000000
+
+func assetIdToString(input: ByteVector|Unit) = {
+  if (input == unit) then wavesString else input.value().toBase58String()
+}
+
+func absBigInt(val: BigInt) = if (val < zeroBigInt) then -val else val
+
+func getAccBalance(assetId: String) = {
+  if(assetId == amId) 
+  then assetBalance(this, fromBase58String(assetId)) +  getIntegerValue(USDCdapp, "USER_LP__" + toString(this))
+  else assetBalance(this, fromBase58String(assetId)) +  getIntegerValue(USDTdapp, "USER_LP__" + toString(this))
+}
+
+func parseAssetId(input: String) = {
+  if (input == wavesString) then unit else input.fromBase58String()
+}
+
+func getD(xp: List[BigInt]) = {
+  let xp0 = xp[0]
+  let xp1 = xp[1]
+  let s = xp0 + xp1
+  if (s == big0) then big0 else {
+    let a = A.parseIntValue()
+    let ann = a * 2
+    let p = fraction(xp0, xp1, big1)
+    let xp0_xp1_n_n = fraction(p, big4, big1)
+    let ann_s = fraction(ann.toBigInt(), s, big1)
+    let ann_1 = (ann - 1).toBigInt()
+    func calcDNext(d: BigInt) = {
+      let dd = fraction(d, d, big1)
+      let ddd = fraction(dd, d, big1)
+      let dp = fraction(ddd, big1, xp0_xp1_n_n)
+      fraction(
+        ann_s + fraction(dp, big2, big1),
+        d,
+        fraction(ann_1, d, big1) + fraction(big3, dp, big1)
+      )
+    }
+    func calc(acc: (BigInt, Boolean), i: Int) = {
+      if (acc._2) then acc else {
+        let d = acc._1
+        let dNext = d.calcDNext()
+        let dDiffRaw = dNext - d.value()
+        let dDiff = if (dDiffRaw < big0) then -dDiffRaw else dDiffRaw
+        if (dDiff <= big1) then {
+          (dNext, true)
+        } else {
+          (dNext, false)
+        }
+      }
+    }
+    let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    let (d, found) = FOLD<17>(arr, (s, false), calc)
+    if (found) then {
+      d
+    } else {
+      { "D calculation error, D = " + d.toString() }.throw()
+    }
+  }
+}
+
+func getYD(xp: List[BigInt], i: Int, D: BigInt) = {
+  let n = big2
+  let x = xp[if (i == 0) then 1 else 0]
+  let aPrecision = Amult.parseBigIntValue()
+  let a = A.parseBigIntValue() * aPrecision
+  let s = x
+  let ann = a * n
+  let c = D * D / (x * n) * D * aPrecision / (ann * n)
+  let b = s + D * aPrecision / ann - D
+  func calc(acc: (BigInt, Int|Unit), cur: Int) = {
+    let (y, found) = acc
+    if (found != unit) then acc else {
+      let yNext = (y * y + c) / (big2 * y + b)
+      let yDiff = absBigInt(yNext - y.value())
+      if (yDiff <= big1) then {
+        (yNext, cur)
+      } else {
+        (yNext, unit)
+      }
+    }
+  }
+  let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  let (y, found) = FOLD<15>(arr, (D, unit), calc)
+  if (found != unit) then {
+    y
+  } else {
+    { "Y calculation error, Y = " + y.toString() }.throw()
+  }
+}
+
+func getY(isReverse: Boolean, D: BigInt, poolAmountInBalance: BigInt) = {
+  let n = big2
+  let aPrecision = Amult.parseBigIntValue()
+  let a = A.parseBigIntValue() * aPrecision
+  let xp = if (isReverse == false) then { 
+    [amId.getAccBalance().toBigInt() + poolAmountInBalance, prId.getAccBalance().toBigInt()]
+  } else {
+    [prId.getAccBalance().toBigInt() + poolAmountInBalance, amId.getAccBalance().toBigInt()]
+  }
+
+  let x = xp[0]
+  let s = x
+  let ann = a * n
+
+  let c = D * D / (x * n) * D * aPrecision / (ann * n)
+  let b = s + D * aPrecision / ann - D
+  func calc(acc: (BigInt, Int|Unit), cur: Int) = {
+      let (y, found) = acc
+      if (found != unit) then acc else {
+        let yNext = (y * y + c) / (big2 * y + b)
+        let yDiff = absBigInt(yNext - y.value())
+        if (yDiff <= big1) then {
+          (yNext, cur)
+        } else {
+          (yNext, unit)
+        }
+      }
+    }
+    let arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    let (y, found) = FOLD<15>(arr, (D, unit), calc)
+    if (found != unit) then {
+      y
+    } else {
+      { "Y calculation error, Y = " + y.toString() }.throw()
+    }
+}
+
+func isShutdown()= {
+  match getBoolean(this, "is_shutdown") {
+    case x: Boolean => x
+    case _ => false
+  }
+}
+
+@Callable(i)
+func shutdown(shutdown:Boolean)=
+if (i.caller == this) then [BooleanEntry("is_shutdown", shutdown)] else throw("admin only")
+
+@Callable(i)
+func shutdownSelector(shutdown:Boolean)=
+if (i.caller == this) then [BooleanEntry(keySelectorIsShutdown, shutdown)] else throw("admin only")
+
+@Callable(i)
+func swap(amountOutMin: Int, AssetOut:String) = {
+if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
+
+  let pmt = i.payments[0].value()
+  let amountIn = i.payments[0].amount.value()
+  let feePoolAmount = fraction(amountIn, fee, feeScale)
+  let cleanAmountIn = amountIn - feePoolAmount
+  let assetIn = pmt.assetId.assetIdToString()
+  let isReverse = if (assetIn == amId) then false else true
+
+  let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
+    let assetOut = prId
+    let poolAmountInBalance = getAccBalance(amId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance)
+  } else {
+    let assetOut = amId
+    let poolAmountInBalance = getAccBalance(prId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance) 
+  }
+
+  let xp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt(), prId.getAccBalance().toBigInt()]
+  } else { 
+    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt()]
+  }
+  let D = xp.getD()
+  let y = getY(isReverse, D, toBigInt(0))
+  let dy = getAccBalance(AssetOut).toBigInt() - y - toBigInt(1)
+  let totalGetRaw = [0, dy.toInt()].max()
+
+  strict checkMin = amountOutMin <= totalGetRaw || "Exchange result is fewer coins than expected".throw()
+
+  let newXp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() + feePoolAmount.toBigInt(), prId.getAccBalance().toBigInt() - dy]
+  } else { 
+    [amId.getAccBalance().toBigInt() - dy, prId.getAccBalance().toBigInt() + feePoolAmount.toBigInt()]
+  }
+  let newD = newXp.getD()
+  strict checkD = newD >= D || "new D is fewer error".throw()
+  
+  strict unstake = if (AssetOut == amId) then invoke(USDCdapp, "unstake", [totalGetRaw], []) else invoke(USDTdapp, "unstake", [totalGetRaw], [])
+  strict stake = if (AssetOut == amId) then invoke(USDTdapp, "stake", [], [AttachedPayment(fromBase58String(prId), assetBalance(this, fromBase58String(prId)))]) else invoke(USDCdapp, "stake", [], [AttachedPayment(fromBase58String(amId), assetBalance(this, fromBase58String(amId)))])
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else invoke(invoker, "selector", [], [])
+  [ScriptTransfer(i.caller, totalGetRaw, assetOut.parseAssetId())]
+}
+
+@Callable(i)
+func readSwap(AssetIn:String, AmountIn: Int, AssetOut:String) = {
+if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
+
+  let amountIn = AmountIn
+  let feePoolAmount = fraction(amountIn, fee, feeScale)
+  let cleanAmountIn = amountIn - feePoolAmount
+  let assetIn = AssetIn
+  let isReverse = if (assetIn == amId) then false else true
+
+  let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
+    let assetOut = prId
+    let poolAmountInBalance = getAccBalance(amId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance)
+  } else {
+    let assetOut = amId
+    let poolAmountInBalance = getAccBalance(prId).toBigInt() + cleanAmountIn.toBigInt()
+    (assetOut, poolAmountInBalance) 
+  }
+
+  let xp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt(), prId.getAccBalance().toBigInt()]
+  } else { 
+    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt()]
+  }
+  let D = xp.getD()
+  let y = getY(isReverse, D, toBigInt(0))
+  let dy = getAccBalance(AssetOut).toBigInt() - y - toBigInt(1)
+  let totalGetRaw = [0, dy.toInt()].max()
+
+  let newXp = if (isReverse == false) then {
+    [amId.getAccBalance().toBigInt() + feePoolAmount.toBigInt(), prId.getAccBalance().toBigInt() - dy]
+  } else { 
+    [amId.getAccBalance().toBigInt() - dy, prId.getAccBalance().toBigInt() + feePoolAmount.toBigInt()]
+  }
+  let newD = newXp.getD()
+  strict checkD = newD >= D || "new D is fewer error".throw()
+  [
+  StringEntry("asset id payment", AssetIn),
+  IntegerEntry("amount paid", AmountIn),
+  IntegerEntry("amount paid rounded without decimals", AmountIn / d6),
+  StringEntry("asset id to receive", AssetOut),
+  IntegerEntry("amount to receive", totalGetRaw),
+  IntegerEntry("amount to receive rounded without decimals", totalGetRaw / d6),
+  IntegerEntry("price", fraction(d6, AmountIn, totalGetRaw))
+  ]
+}   
+
+@Callable(i)
+func balance_info()=
+{
+  [
+  IntegerEntry("USDC", getAccBalance(amId) / d6),
+  IntegerEntry("USDT", getAccBalance(prId) / d6),
+  IntegerEntry("USD total", (getAccBalance(amId) + getAccBalance(prId)) / d6)
+  ]
+}
