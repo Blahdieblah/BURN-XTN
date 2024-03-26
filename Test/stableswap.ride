@@ -174,12 +174,12 @@ if (i.caller == this) then [BooleanEntry(keySelectorIsShutdown, shutdown)] else 
 @Callable(i)
 func swap(amountOutMin: Int) = {
 if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
-
+  
   let pmt = i.payments[0].value()
-  let amountIn = i.payments[0].amount.value()
+  let amountIn = if i.payments[0].amount.value() < d6/10 then throw("minimum 0.1") else i.payments[0].amount.value()
   let feePoolAmount = fraction(amountIn, fee, feeScale)
   let cleanAmountIn = amountIn - feePoolAmount
-  let assetIn = pmt.assetId.assetIdToString()
+  let assetIn = if (pmt.assetId.assetIdToString() == amId || pmt.assetId.assetIdToString() == prId) then pmt.assetId.assetIdToString() else throw("wrong asset id")
   let isReverse = if (assetIn == amId) then false else true
   let AssetOut = if (assetIn == amId) then prId else amId
 
