@@ -37,7 +37,7 @@ if (i.caller != loyalty && i.caller != invoker) then throw("no access") else {
 }
 
 @Callable(i)
-func shillerRewards() = 
+func loyaltyRewards() = 
 if (i.caller != loyalty && i.caller != invoker) then throw("no access") else {
   strict sxtn = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(xtnId,assetBalance(this, xtnId))])
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
