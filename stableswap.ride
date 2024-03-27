@@ -240,16 +240,14 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
 }
 
 @Callable(i)
-func readSwap(AssetIn:String, AmountIn: Int) = {
+func readSwap(AssetIn:String, AmountIn: Int, AssetOut:String) = {
 if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')) then throw("contract is shutdown") else
 
-  let pmt = i.payments[0].value()
-  let amountIn = if i.payments[0].amount.value() < d6/10 then throw("minimum 0.1") else i.payments[0].amount.value()
+  let amountIn = AmountIn
   let feePoolAmount = fraction(amountIn, fee, feeScale)
   let cleanAmountIn = amountIn - feePoolAmount
-  let assetIn = if (pmt.assetId.assetIdToString() == amId || pmt.assetId.assetIdToString() == prId) then pmt.assetId.assetIdToString() else throw("wrong asset id")
+  let assetIn = AssetIn
   let isReverse = if (assetIn == amId) then false else true
-  let AssetOut = if (assetIn == amId) then prId else amId
 
   let (assetOut, poolAmountInBalance) = if (isReverse == false) then {
     let assetOut = prId
@@ -262,9 +260,9 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
   }
 
   let xp = if (isReverse == false) then {
-    [amId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt(), prId.getAccBalance().toBigInt()]
+    [amId.getAccBalance().toBigInt() - amountIn.toBigInt(), prId.getAccBalance().toBigInt()]
   } else { 
-    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - i.payments[0].value().amount.toBigInt()]
+    [amId.getAccBalance().toBigInt(), prId.getAccBalance().toBigInt() - AmountIn.toBigInt()]
   }
   let D = xp.getD()
   let y = getY(isReverse, D, toBigInt(0))
@@ -278,11 +276,12 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
   }
   let newD = newXp.getD()
   strict checkD = newD >= D || "new D is fewer error".throw()
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else 
+    if (getIntegerValue(invoker, keyInvokeNext) == 70) then invoke(this, "claimAll", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "changeEntry", [0], []) else
+    invoke(invoker, "selector", [], [])
+  strict selector0 = if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "selector", [], []) else unit
   [
-  StringEntry("asset id payment", AssetIn),
-  IntegerEntry("amount paid", AmountIn),
-  IntegerEntry("amount paid rounded without decimals", AmountIn / d6),
-  StringEntry("asset id to receive", AssetOut),
   IntegerEntry("amount to receive", totalGetRaw),
   IntegerEntry("amount to receive rounded without decimals", totalGetRaw / d6),
   IntegerEntry("price", fraction(d6, AmountIn, totalGetRaw))
@@ -292,6 +291,11 @@ if (isShutdown() == true) && (i.caller != Address(base58'3PEtLVxDT8mxAh1SDAn8m7J
 @Callable(i)
 func balance_info()=
 {
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else 
+    if (getIntegerValue(invoker, keyInvokeNext) == 70) then invoke(this, "claimAll", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "changeEntry", [0], []) else
+    invoke(invoker, "selector", [], [])
+  strict selector0 = if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "selector", [], []) else unit
   [
   IntegerEntry("USDC", getAccBalance(amId) / d6),
   IntegerEntry("USDT", getAccBalance(prId) / d6),
@@ -310,4 +314,9 @@ if (i.caller != this) then throw("access only by project owner") else{
 @Callable(i)
 func reset_trading_volume()=
 if (i.caller != this) then throw("access only by project owner") else{
+  strict selector = if (getBoolean(this, keySelectorIsShutdown) == true) then unit else 
+    if (getIntegerValue(invoker, keyInvokeNext) == 70) then invoke(this, "claimAll", [], []) else 
+    if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "changeEntry", [0], []) else
+    invoke(invoker, "selector", [], [])
+  strict selector0 = if (getIntegerValue(this, keyInvokeNext) == 0) then invoke(invoker, "selector", [], []) else unit
 [IntegerEntry(keyTradingVolume, 0)]}
