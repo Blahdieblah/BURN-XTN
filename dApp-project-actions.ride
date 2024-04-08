@@ -145,7 +145,7 @@ if (i.caller != this) then throw("access only by project owner") else
     strict swapXTNtoVVXTNLP = if assetBalance(this, xtnId) > 0 then
       swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
     [
-    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId)),
+    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId) / d6),
     IntegerEntry("total SURF Neutrino staking", surfStaking)
     ]
 }
