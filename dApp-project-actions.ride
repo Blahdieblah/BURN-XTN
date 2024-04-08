@@ -100,6 +100,12 @@ func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
   invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 11, 10), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
 }
 
+# SURF staking
+let surfAddress = Address(base58'3PBiotFpqjRMkkeFBccnQNUXUopy7KFez5C')
+let surfData = getStringValue(surfAddress, "%s%s%s%s__history__stake__" + toString(this) + "__8NdBPNod2R5uQvx4ZhaZZW1JDkXoRtVgLzonTVz3hAkK")
+let surfList = split_4C(surfData, "__")
+let surfStaking = parseIntValue(getElement(surfList, 2))
+
 @Callable(i)
 func FirstInvoke() = 
 if (i.caller != this) then throw("access only by project owner") else{
@@ -134,9 +140,13 @@ func secondInvoke()=
 if (i.caller != this) then throw("access only by project owner") else
 {
     strict stakeSurf = if assetBalance(this, surfId) > 0 then 
-      invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
+    #  invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
+      invoke(surfAddress, "stake", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
     strict swapXTNtoVVXTNLP = swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
-    [IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId))]
+    [
+    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId)),
+    IntegerEntry("total SURF Neutrino staking", surfStaking)
+    ]
 }
 
 @Callable(i)
