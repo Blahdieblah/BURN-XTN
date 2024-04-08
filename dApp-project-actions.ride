@@ -142,7 +142,8 @@ if (i.caller != this) then throw("access only by project owner") else
     strict stakeSurf = if assetBalance(this, surfId) > 0 then 
     #  invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
       invoke(surfAddress, "stake", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
-    strict swapXTNtoVVXTNLP = swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    strict swapXTNtoVVXTNLP = if assetBalance(this, xtnId) > 0 then
+      swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
     [
     IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId)),
     IntegerEntry("total SURF Neutrino staking", surfStaking)
