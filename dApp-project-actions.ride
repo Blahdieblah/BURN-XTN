@@ -104,7 +104,7 @@ func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
 let surfAddress = Address(base58'3PBiotFpqjRMkkeFBccnQNUXUopy7KFez5C')
 let surfData = getStringValue(surfAddress, "%s%s%s%s__history__stake__" + toString(this) + "__8NdBPNod2R5uQvx4ZhaZZW1JDkXoRtVgLzonTVz3hAkK")
 let surfList = split_4C(surfData, "__")
-let surfStaking = parseIntValue(getElement(surfList, 2))
+let surfStaking = parseIntValue(getElement(surfList, 5)) / d6
 
 @Callable(i)
 func FirstInvoke() = 
@@ -158,8 +158,8 @@ if (i.caller != this) then throw("access only by project owner") else{
     IntegerEntry("ATH in wavelets", ATH),
     IntegerEntry("BURN-XTN / USD price in centlets", burnxtnusdprice),
     IntegerEntry("ATH in centlets", ATHusd),
-    IntegerEntry("TVL project in WAVES excluding BURN-XTN", tvlinwaves),
-    IntegerEntry("TVL pool in WAVES excluding BURN-XTN", tvlpool),
+    #IntegerEntry("TVL project in WAVES excluding BURN-XTN", tvlinwaves),
+    #IntegerEntry("TVL pool in WAVES excluding BURN-XTN", tvlpool),
     IntegerEntry("Activated blockheight", height),
     IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
     case asset:Asset =>
