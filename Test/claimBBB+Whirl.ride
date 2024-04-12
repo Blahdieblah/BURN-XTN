@@ -1,0 +1,283 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let d6 = 1000000
+let d8 = 100000000
+let d16 = (d8 * d8)
+
+let poolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let poolString = toBase58String(poolId)
+let pool2 = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx'
+let poolMega = base58'3PBiMQLnX8wd4bssXCgF8KuUqHv1H4zWHGi'
+let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let poolWhirl = base58'3P2myTbd5zpEHcYmNpdWTp5gXS5B8tL1RCY'
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let burnxtnString = toBase58String(burnxtnId)
+
+let westId = base58'4LHHvYGNKJUg5hj65aGD5vgScvCBmLpdRFtjokvCjSL8'
+let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
+let eggId = base58'C1iWsKGqLwjHUndiQ7iXpdmPum9PeCDFfyXBdJJosDRS'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+let nsbtId = base58'6nSpVyNH7yM69eg446wrQR94ipbbcmZMU1ENPwanC97g'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
+let wavesId = base58'WAVES'
+let usdterc = base58'9wc3LXNA4TEBsXyKtoLE9mrbDD7WMHXvXrCjZvabLAsi'
+let usdcerc = base58'HGgabTqUS8WtVFUJzfmrTDMgEccJuZLBPhFgQFxvnsoW'
+let usdtbsc = base58'A81p1LTRyoq2rDR2TNxB2dWYxsiNwCSSi8sXef2SEkwb'
+let usdcbsc = base58'4BKKSp6NoNcrFHyorZogDyctq1fq6w7114Ym1pw6HUtC'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX = wavesBalance(WX_BURNXTN_WAVES).regular + baseAmount
+let burnxtnInWX = assetBalance(WX_BURNXTN_WAVES, burnxtnId)
+let burnxtnwavesprice = fraction(d8 , wavesInWX, burnxtnInWX)
+
+let burnxtnbalance2 = assetBalance(Address(pool2), burnxtnId)
+let usdbalance = (assetBalance(Address(pool2), usdterc) + assetBalance(Address(pool2), usdcerc) + assetBalance(Address(pool2), usdtbsc) + assetBalance(Address(pool2), usdcbsc)) / 4
+let burnxtnusdprice = fraction(d8, usdbalance, burnxtnbalance2) 
+
+let ATH = if burnxtnwavesprice > getIntegerValue("ATH in wavelets") then burnxtnwavesprice else getIntegerValue(this, "ATH in wavelets")
+let ATHusd = if burnxtnusdprice > getIntegerValue("ATH in centlets") then burnxtnusdprice else getIntegerValue(this, "ATH in centlets")
+
+#let wavesinpool = getIntegerValue(Address(poolId), ("global_" + toBase58String(wavesId)) + "_balance")
+#let projectstake = getIntegerValue(Address(poolId), ("3PAucbbumdUXmhzcR421zGiayphEdo2tRoz" + "_indexStaked"))
+#let totalstake = getIntegerValue(Address(poolId), ("global_poolToken_amount"))
+#let tvlinwaves = fraction(fraction(wavesinpool, projectstake, totalstake), 9, d8) ### replace 9 >  * 10?
+#let tvlpool = fraction(wavesinpool, 9, d8) ### replace 9 >  * 10?
+
+let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial price BURN-XTN in wavelets")) - d8) / 1000000
+
+let PL_Defi = Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X')
+
+func PL_value(dAppAddress:Address, asset:ByteVector)=
+{
+  fraction(getIntegerValue(dAppAddress, (toString(this) + "_supplied_" + toBase58String(asset))), 
+  getIntegerValue(dAppAddress, (toBase58String(asset) + "_sRate")), 
+  d16)
+}
+
+# swap WX pools
+func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
+{
+  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 11, 10), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
+}
+
+# SURF staking
+let surfAddress = Address(base58'3PBiotFpqjRMkkeFBccnQNUXUopy7KFez5C')
+let surfData = getStringValue(surfAddress, "%s%s%s%s__history__stake__" + toString(this) + "__8NdBPNod2R5uQvx4ZhaZZW1JDkXoRtVgLzonTVz3hAkK")
+let surfList = split_4C(surfData, "__")
+let surfStaking = parseIntValue(getElement(surfList, 5)) / d6
+
+@Callable(i)
+func FirstInvoke() = 
+if (i.caller != this) then throw("access only by project owner") else{
+    strict b = invoke(this, "burnXTN", [], [])
+    strict grow = if (burnxtnwavesprice >= getIntegerValue(this, "ATH in wavelets")) then invoke(this, "grow", [], []) else unit 
+    strict pump = if (burnxtnwavesprice < getIntegerValue(this, "ATH in wavelets")) then invoke(this, "pump", [], []) else unit
+    strict dEntry = invoke(this, "dEntry", [], [])
+    []}
+
+@Callable(i)
+func thirdInvoke()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict wavesBalanceBefore = wavesBalance(this).available
+    strict swapSwop = invoke(Address(poolMega), "swap", [toBase58String(puzzle), 0], [AttachedPayment(swopId, assetBalance(this, swopId))])
+    strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle, assetBalance(this, puzzle))])
+    strict swapWhirl = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(whirlpool, assetBalance(this, whirlpool))])
+    strict swapRome = invoke(Address(poolBBB), "swap", [toBase58String(burnxtnId), 0], [AttachedPayment(rome, assetBalance(this, rome))])
+    let wavesDifference = wavesBalance(this).available - wavesBalanceBefore
+    strict swapWaves = invoke(Address(poolId), "swap", [toBase58String(surfId), 0], [AttachedPayment(unit, wavesDifference)])
+
+    let surfBurnAmount = assetBalance(this, surfId)
+    let surfBurn = Burn(surfId, surfBurnAmount)
+    [
+    surfBurn,
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
+    ]
+}
+
+@Callable(i)
+func secondInvoke()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict stakeSurf = if assetBalance(this, surfId) > 0 then 
+    #  invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
+      invoke(surfAddress, "stake", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
+    strict swapXTNtoVVXTNLP = if assetBalance(this, xtnId) > 0 then
+      swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
+    [
+    IntegerEntry("total SURF PL Waves Defi", PL_value(PL_Defi, surfId) / d6),
+    IntegerEntry("total SURF Neutrino staking", surfStaking)
+    ]
+}
+
+@Callable(i)
+func dEntry() =
+if (i.caller != this) then throw("access only by project owner") else{
+    [
+    IntegerEntry("BURN-XTN / WAVES price in wavelets", burnxtnwavesprice),
+    IntegerEntry("Price growth %", pricegrowth),
+    IntegerEntry("ATH in wavelets", ATH),
+    IntegerEntry("BURN-XTN / USD price in centlets", burnxtnusdprice),
+    IntegerEntry("ATH in centlets", ATHusd),
+    #IntegerEntry("TVL project in WAVES excluding BURN-XTN", tvlinwaves),
+    #IntegerEntry("TVL pool in WAVES excluding BURN-XTN", tvlpool),
+    IntegerEntry("Activated blockheight", height),
+    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+    }),
+    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+    }),
+    IntegerEntry("SURF supply", match assetInfo(surfId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset") 
+    })
+    ]
+}
+
+@Callable(i)
+func grow()= 
+if (i.caller != this) then throw("access only by project owner") else {
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+  [burnxtnBurn]
+}
+
+@Callable(i)
+func pump()= 
+if (i.caller != this) then throw("access only by project owner") else {
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
+    then wavesBalance(this).available - d8
+    else 0)])
+    [Burn(burnxtnId, assetBalance(this, burnxtnId))]
+}
+
+# If func dEntry is not invoked in 8 days, then function PumpByAnybody, can be called by anybody. (This is tokenomics mode: burn XTN fees, buyback & burn BURN-XTN).
+@Callable(i)
+func PumpByAnybody() = 
+if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 8 * 1440)) else{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
+  strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
+  strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
+  strict segg = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(eggId,assetBalance(this, eggId))])
+  strict ssurf = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(surfId,assetBalance(this, surfId))])
+  strict snsbt = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(nsbtId,assetBalance(this, nsbtId))])
+  strict swx = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(wxId,assetBalance(this, wxId))])
+  strict sswop = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(swopId,assetBalance(this, swopId))])
+  strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
+then wavesBalance(this).available - d8
+else 0)])
+  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnburnamount)
+  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+    [
+    xtnBurn,
+    burnxtnBurn,
+    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")
+}),
+IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount)
+    ]
+}
+
+@Callable(i)
+func PumpByAnybody2() = 
+if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 8 * 1440)) else{
+  strict claimInvB = invoke(Address(poolBBB), "claimIndexRewards", [], [])
+  strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
+  strict swhirl = invoke(Address(poolBBB), "swap", [burnxtnString,0], [AttachedPayment(whirlpool,assetBalance(this, whirlpool))])
+  strict spuzzle = invoke(Address(poolBBB), "swap", [burnxtnString,0], [AttachedPayment(puzzle,assetBalance(this, puzzle))])
+  strict srome = invoke(Address(poolBBB), "swap", [burnxtnString,0], [AttachedPayment(rome,assetBalance(this, rome))])
+  []
+}
+
+@Callable(i)
+func withdraw() = {
+  if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+  strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+  []
+}
+
+@Callable(i)
+func importVVXTNLP()=
+{
+    if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
+    strict import = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "importLP", [], [AttachedPayment(vvxtnlp, assetBalance(this, vvxtnlp))])
+    []
+}
+
+@Callable(i)
+func burnXTN() = 
+if (i.caller != this) then throw("access only by project owner") else {
+  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnburnamount)
+    [
+    xtnBurn,
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnburnamount),
+    IntegerEntry("XTN supply", match assetInfo(xtnId) {
+    case asset:Asset =>
+        (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
+    case _ => throw("Can't find asset")
+    })
+    ]
+}
