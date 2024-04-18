@@ -40,97 +40,28 @@ let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 
-func PL_value(dAppAddress:Address, asset:ByteVector)=
-{
-  fraction(tryGetInteger(dAppAddress, (toString(this) + "_supplied_" + toBase58String(asset))), 
-  tryGetInteger(dAppAddress, (toBase58String(asset) + "_sRate")), 
-  d16)
-}
-
 @Callable(i)
-func unstakeIndex_burnxtn() = 
-if (i.caller != this) then throw("access only by project owner") else
+func burnxtn() = 
+if (i.caller != this) || (height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440)
+then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id)
-]
+strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtn_id, 1)]) # assetBalance(this, PZ_burnxtn_id)
+[]
 }
 
 @Callable(i)
-func unstakeIndex_burnxppt() = 
-if (i.caller != this) then throw("access only by project owner") else
+func burnxppt() = 
+if (i.caller != this) || (height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440)
+then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id)
-]
+strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, 1)]) # assetBalance(this, PZ_burnxtnppt_id)
+[]
 }   
 
 @Callable(i)
-func transferLPsAll() = 
-if (i.caller != this) then throw("access only by project owner") else
-{
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id),
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id),
-ScriptTransfer(wavesdaoaddress, assetBalance(this, WX_burnxtnwaves_id), WX_burnxtnwaves_id),
-ScriptTransfer(wavesdaoaddress, assetBalance(this, WX_peteburnxtn_id), WX_peteburnxtn_id)
-]
-}  
-
-# If func dEntry of dApp: 3PAucbbumdUXmhzcR421zGiayphEdo2tRoz is not invoked in 30 days by wallet owner, then functions _byAnybody, can be called by anybody.
-@Callable(i)
-func unstakeIndex_burnxtn_byAnybody() = 
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtn_id), PZ_burnxtn_id)
-]
-}
-
-@Callable(i)
-func unstakeIndex_burnxppt_byAnybody() = 
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
-[
-ScriptTransfer(wavesdaoaddress, assetBalance(this, PZ_burnxtnppt_id), PZ_burnxtnppt_id)
-]
-}
-
-@Callable(i)
-func withdrawXTN_Axly() = 
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-  let withdrawAmount = PL_value(Address(base58'3PAd9Aqg3cQSzu26MFYWQYcjSXPVCJtuf5V'), xtnId)
-  strict withdraw = invoke(Address(base58'3PAd9Aqg3cQSzu26MFYWQYcjSXPVCJtuf5V'), "withdraw", [toBase58String(xtnId),withdrawAmount], [])
-  []
-}
-
-@Callable(i)
-func unstakeTsunamiXTNvault_byAnybody(amount:Int) = 
-#Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm
-#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{strict unstake = invoke(Address(base58'3P7x1gG55wno1Q3kDvVwnmzWWRkMr2nTXLm'), "unStake", [amount], [])
-[ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)]}
-
-@Callable(i)
-func unstakeTsunamiWAVESvault_byAnybody(amount:Int) = 
-#Withdraw limit is 25% of total stake, view limit: https://waves-dapp.com/3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd 
-#Invoke: view_withdrawLimit, string: 3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc, popup error with the amount
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-strict unstake = invoke(Address(base58'3P8nCfN4vnzDp6twckBEs29g95eR3RKQdGd'), "unStake", [amount], [])
-[
-ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit)
-]
-}
-
-@Callable(i)
-func returnAssets_byAnybody() = 
+func returnAssets() = 
 if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
 [
@@ -142,7 +73,6 @@ ScriptTransfer(wavesdaoaddress, assetBalance(this, xtnId), xtnId)
 
 @Callable(i)
 func withdraw() = {
-  if (i.caller != Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')) then throw("no access") else
   strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
   []
 }
