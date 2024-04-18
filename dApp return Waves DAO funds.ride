@@ -26,8 +26,8 @@ let burnxtnString = toBase58String(burnxtnpoolId)
 let burnxpptpoolId = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx' # = BURN-XTN x PepeTeam
 let burnxpptString = toBase58String(burnxpptpoolId)
 
-let burnxtn_pz_amount = getIntegerValue(Address(burnxtnpoolId), ("3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr" + "_indexStaked"))
-let burnxppt_pz_amount = getIntegerValue(Address(burnxpptpoolId), ("3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr" + "_indexStaked"))
+let burnxtn_pz_amount = getIntegerValue(Address(burnxtnpoolId), (toString(this) + "_indexStaked"))
+let burnxppt_pz_amount = getIntegerValue(Address(burnxpptpoolId), (toString(this) + "_indexStaked"))
 let activated = getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight")
 
 let PZ_burnxtn_id = base58'GdrDHazRGcCYeCgDEZzLpsZ3E7jmrxYB7EDUiGfiVAr1'
@@ -36,33 +36,52 @@ let WX_burnxtnwaves_id = base58'GyiHdcN59sZ46baFvj68ruLngrTPEvWDtsd6jHm4o46n'
 let WX_peteburnxtn_id = base58'3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z'
 
 let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
+let burnxtnProjectAddress = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 
 @Callable(i)
 func burnxtn() = 
-if (i.caller != this) || (height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440)
-then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
-strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtn_id, 1)]) # assetBalance(this, PZ_burnxtn_id)
+strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtn_id, assetBalance(this, PZ_burnxtn_id))])
 []
 }
 
 @Callable(i)
 func burnxppt() = 
-if (i.caller != this) || (height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440)
-then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
-strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, 1)]) # assetBalance(this, PZ_burnxtnppt_id)
+strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, assetBalance(this, PZ_burnxtnppt_id))])
 []
 }   
 
 @Callable(i)
+func burnxtnAny() = 
+if (height < getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)
+then throw("Wait till blockheight" + toString(getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstakeIndex = invoke(Address(burnxtnpoolId), "unstakeIndex", [burnxtn_pz_amount], [])
+strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtn_id, assetBalance(this, PZ_burnxtn_id))])
+[]
+}
+
+@Callable(i)
+func burnxpptAny() = 
+if (height < getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)
+then throw("Wait till blockheight" + toString(getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
+strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, assetBalance(this, PZ_burnxtnppt_id))])
+[]
+}  
+
+@Callable(i)
 func returnAssets() = 
-if height < getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
+if height < getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight" + toString(getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)) else
 {
 [
 ScriptTransfer(wavesdaoaddress, wavesBalance(this).available, unit),
