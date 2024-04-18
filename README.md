@@ -24,7 +24,7 @@ This function performs tokenomics mode: PUMP
 
 dApp: https://waves-dapp.com/3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc
 
-Functions: "burnxtn" and "burnxppt" unstakes LP and stakes the LP for the Waves DAO wallet.
+Functions: "burnxtnAny" and "burnxpptAny" unstakes LP and stakes the LP for the Waves DAO wallet.
 Function: "returnAssets" transfers wallet balances of WAVES, sWAVES and XTN to Waves DAO wallet.
 Function: "withdraw" claims vested XTN to dApp wallet.
 
