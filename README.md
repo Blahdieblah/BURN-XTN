@@ -1,7 +1,7 @@
 # BURN-XTN dApp can perform all project actions.
 dApp: https://waves-dapp.com/3PAucbbumdUXmhzcR421zGiayphEdo2tRoz
 
-All XTN and BURN-XTN trading fees are burned.
+XTN and BURN-XTN trading fees are burned.
 
 if market price < ATH in wavelets, then PUMP = remaining trading fees buyback and burn BURN-XTN.
 
@@ -24,7 +24,9 @@ This function performs tokenomics mode: PUMP
 
 dApp: https://waves-dapp.com/3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc
 
-Every function unstakes LP and transfers to Waves DAO wallet.
+Functions: "burnxtn" and "burnxppt" unstakes LP and stakes the LP for the Waves DAO wallet.
+Function: "returnAssets" transfers wallet balances of WAVES, sWAVES and XTN to Waves DAO wallet.
+Function: "withdraw" claims vested XTN to dApp wallet.
 
-If the project actions dApp is not activated for 30 days, then functions: _byAnybody, can be called by anybody.
-AND access is granted to another wallet, after 90 days access to Puzzlemaster.
+If the project actions dApp is not activated for 30 days, then functions can be called by anybody.
+AND access is granted to another wallet, AND after 90 days access to Puzzlemaster.
