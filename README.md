@@ -17,7 +17,10 @@ dApp is triggered every week manually, besides performing the above project acti
 - BURN-XTN total burned
 
 ## If dApp is not activated by project owner
-After 8 days, then dApp function: PumpByAnybody, becomes callable by anybody.
+After 8 days callable by anybody, the dApp function: 
+- PumpByAnybody1
+- PumpByAnybody2
+ 
 This function performs tokenomics mode: PUMP
 
 # Waves DAO unstake and return funds
