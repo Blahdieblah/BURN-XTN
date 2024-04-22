@@ -93,12 +93,6 @@ let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial
 #  getIntegerValue(dAppAddress, (toBase58String(asset) + "_sRate")), 
 #  d16)}
 
-# swap WX pools
-func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
-{
-  invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 11, 10), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])
-}
-
 # SURF staking
 let surfAddress = Address(base58'3PBiotFpqjRMkkeFBccnQNUXUopy7KFez5C')
 let surfStaking = getIntegerValue(surfAddress, "%s%s%s__paramByUser__" + toString(this) + "__amount") / d6
@@ -142,6 +136,10 @@ if (i.caller != this) then throw("access only by project owner") else
     strict stakeSurf = if assetBalance(this, surfId) > 0 then 
     #  invoke(Address(base58'3P4DK5VzDwL3vfc5ahUEhtoe5ByZNyacJ3X'), "supply", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
       invoke(surfAddress, "stake", [], [AttachedPayment(surfId, assetBalance(this, surfId))]) else unit
+    
+    # swap WX pools
+    func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int)=
+    {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [fraction(amountIn, 125, 100), toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
     strict swapXTNtoVVXTNLP = if assetBalance(this, xtnId) > 0 then
       swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId)) else unit
     [
@@ -183,15 +181,18 @@ if (i.caller != this) then throw("access only by project owner") else{
 @Callable(i)
 func grow()= 
 if (i.caller != this) then throw("access only by project owner") else {
+  strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
-  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+  let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
+  let burnxtnBurn = Burn(burnxtnId, burnxtnDifference)
   [burnxtnBurn]
 }
 
 @Callable(i)
 func pump()= 
 if (i.caller != this) then throw("access only by project owner") else {
+  strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
@@ -201,13 +202,15 @@ if (i.caller != this) then throw("access only by project owner") else {
   strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
     then wavesBalance(this).available - d8
     else 0)])
-    [Burn(burnxtnId, assetBalance(this, burnxtnId))]
+  let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
+    [Burn(burnxtnId, burnxtnDifference)]
 }
 
 # If func dEntry is not invoked in 8 days, then function PumpByAnybody, can be called by anybody. (This is tokenomics mode: burn XTN fees, buyback & burn BURN-XTN).
 @Callable(i)
-func PumpByAnybody() = 
+func PumpByAnybody2() = 
 if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 8 * 1440)) else{
+  strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
   strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])
   strict swest = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(westId,assetBalance(this, westId))])
   strict svires = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(viresId,assetBalance(this, viresId))])
@@ -219,9 +222,10 @@ if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw
   strict swapwaves = invoke(Address(poolId), "swap", [burnxtnString,0], [AttachedPayment(unit,if wavesBalance(this).available - d8 > 0
 then wavesBalance(this).available - d8
 else 0)])
-  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnburnamount = if (assetBalance(this, xtnId) >= 100 * d6) then (100 * d6) else (assetBalance(this, xtnId))
   let xtnBurn = Burn(xtnId, xtnburnamount)
-  let burnxtnBurn = Burn(burnxtnId, assetBalance(this, burnxtnId))
+  let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
+  let burnxtnBurn = Burn(burnxtnId, burnxtnDifference)
     [
     xtnBurn,
     burnxtnBurn,
@@ -240,7 +244,7 @@ IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtn
 }
 
 @Callable(i)
-func PumpByAnybody2() = 
+func PumpByAnybody1() = 
 if height < getIntegerValue(this, "Activated blockheight") + 8 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 8 * 1440)) else{
   strict claimInvB = invoke(Address(poolBBB), "claimIndexRewards", [], [])
   strict claimInvW = invoke(Address(poolWhirl), "claimIndexRewards", [], [])
@@ -268,7 +272,7 @@ func importVVXTNLP()=
 @Callable(i)
 func burnXTN() = 
 if (i.caller != this) then throw("access only by project owner") else {
-  let xtnburnamount = assetBalance(this, xtnId)
+  let xtnburnamount = if (assetBalance(this, xtnId) >= 100 * d6) then (100 * d6) else (assetBalance(this, xtnId))
   let xtnBurn = Burn(xtnId, xtnburnamount)
     [
     xtnBurn,
