@@ -22,7 +22,6 @@ let d6 = 1000000
 
 let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
-let bbbPoolId = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let puzzleMarket = Address(base58'3PATXDVE53rKJtkwXYV3tvuLVS2fDtGtKCc')
 
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
@@ -33,10 +32,10 @@ let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 
 let puzzleStaked = tryGetInteger(puzzleStaking, toString(this) + "_staked")
-let puzzleInPool = tryGetInteger(Address(bbbPoolId), ("global_" + toBase58String(puzzle)) + "_balance")
-let projectStake = tryGetInteger(Address(bbbPoolId), (toString(this) + "_indexStaked"))
-let totalStake = tryGetInteger(Address(bbbPoolId), ("global_poolToken_amount"))
-let assetWeight = tryGetInteger(Address(bbbPoolId), ("static_" + toBase58String(puzzle)) + "_weight")
+let puzzleInPool = tryGetInteger(Address(poolBBB), ("global_" + toBase58String(puzzle)) + "_balance")
+let projectStake = tryGetInteger(Address(poolBBB), (toString(this) + "_indexStaked"))
+let totalStake = tryGetInteger(Address(poolBBB), ("global_poolToken_amount"))
+let assetWeight = tryGetInteger(Address(poolBBB), ("static_" + toBase58String(puzzle)) + "_weight")
 let BBBlpInPuzzle = fraction(puzzleInPool / assetWeight * 10000, projectStake, totalStake)
 let totalPuzzle = puzzleStaked + BBBlpInPuzzle + assetBalance(this, puzzle)
 
@@ -54,6 +53,7 @@ let keyTotalWhirlpoolPaid = "Total WHIRLPOOL paid"
 let keyTotalRomePaid = "Total ROME paid"
 let keyTotalWavesPaid = "Total WAVES paid"
 let keyTotalPuzzlePaid = "Total PUZZLE paid"
+let keyRomeBalance = "ROME balance"
 
 let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
 let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
@@ -93,14 +93,12 @@ if (i.caller != this) then throw("access only by project owner") else
 func claimInvestPuzzle()= 
 if (i.caller != this) then throw("access only by project owner") else
 {
-    strict romeBalanceBefore = assetBalance(this, rome)
     strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
     strict poolOneTokenInv = invoke(Address(base58'3PR1Qvi9mHT35SwWEkLSqqE2L8thiPLdVWU'), "generateIndexWithOneTokenAndStake", [toBase58String(poolBBB)],[AttachedPayment(puzzle,assetBalance(this, puzzle))])
-    let romeBalanceAfter = assetBalance(this, rome)
     [
     IntegerEntry("Activated blockheight", height),
     IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
-    IntegerEntry(keyRomeAmount, romeBalanceAfter - romeBalanceBefore),
+    IntegerEntry(keyRomeAmount, assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
     IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
     IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool))
     ]
@@ -218,16 +216,12 @@ func claimByAnybody()=
 if height < getIntegerValue(this, "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
 {
     strict puzzleBalanceBefore = assetBalance(this, puzzle)
-    strict romeBalanceBefore = assetBalance(this, rome)
-
     strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
     strict claimInv = invoke(Address(poolBBB), "claimIndexRewards", [], [])
-
     let puzzleBalanceAfter = assetBalance(this, puzzle)
-    let romeBalanceAfter = assetBalance(this, rome)
     [
     IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
-    IntegerEntry(keyRomeAmount, romeBalanceAfter - romeBalanceBefore),
+    IntegerEntry(keyRomeAmount, assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
     IntegerEntry(keyPuzzleAmount, puzzleBalanceAfter - puzzleBalanceBefore),
     IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
     IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool))
@@ -287,6 +281,11 @@ if (i.caller != this) then throw("access only by project owner") else
     ScriptTransfer(addressFromStringValue(address), amountSURFboard * d6, surf)
     ]
 }
+
+@Callable(i)
+func setRomeBalance(amount:Int)= 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyRomeBalance, amount * d6)]}
 
 @Callable(i)
 func deleteEntry()= 
