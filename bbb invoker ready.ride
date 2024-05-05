@@ -85,38 +85,21 @@ let SURFboardList = [
 ]
 
 @Callable(i)
-func invokeClI1()=
+func claimInvestPuzzle()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
-  strict cl = invoke(this, "claimInvestPuzzle", [], [])
-  strict dt = invoke(this, "data", [], [])
-  [IntegerEntry(keyInvokeNext, 2)]
-}
-
-@Callable(i)
-func claimInvestPuzzle()= 
-if (i.caller != this) then throw("access only by project owner") else
-{
     strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
-    strict inv =  if (assetBalance(this, puzzle) > 0) then
+    strict inv = if (assetBalance(this, puzzle) > 0) then
       invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
     strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
-    invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
+      invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
     [
     IntegerEntry("Activated blockheight", height),
     IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
     IntegerEntry(keyRomeAmount, assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
     IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
     IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool)),
-    ScriptTransfer(invoker, d6, unit)
-    ]
-}
-
-@Callable(i)
-func data()=
-if (i.caller != this) then throw("access only by project owner") else
-{
-    [
+    ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
     IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
     IntegerEntry("puzzle staked", puzzleStaked),
     IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
@@ -133,10 +116,11 @@ if (i.caller != this) then throw("access only by project owner") else
       110),
         10,
         9))
-    ]}
+    ]
+}
 
 @Callable(i)
-func invoker2()= 
+func distribute()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict t = invoke(this, "trackTotalPaid", [], [])
@@ -147,7 +131,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
     strict bs = invoke(this, "burnSurf", [], [])
     [
     IntegerEntry("Activated 2 blockheight", height),
-    ScriptTransfer(invoker, d6, unit),
+    ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
     IntegerEntry(keyInvokeNext, 1)
     ]
 }
@@ -222,77 +206,6 @@ func register()=
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
 if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
 {[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]}
-
-@Callable(i)
-func claimByAnybody()=
-if height < getIntegerValue(this, "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-    strict puzzleBalanceBefore = assetBalance(this, puzzle)
-    strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
-    strict claimInv = invoke(Address(poolBBB), "claimIndexRewards", [], [])
-    let puzzleBalanceAfter = assetBalance(this, puzzle)
-    [
-    IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
-    IntegerEntry(keyRomeAmount, assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
-    IntegerEntry(keyPuzzleAmount, puzzleBalanceAfter - puzzleBalanceBefore),
-    IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
-    IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool))
-    ]
-}
-
-@Callable(i)
-func invokerByAnybody()=
-if height < getIntegerValue(this, "Activated blockheight") + 30 * 1440 then throw("Wait till blockheight:" + toString(getIntegerValue(this, "Activated blockheight") + 30 * 1440)) else
-{
-    strict t = invoke(this, "trackTotalPaid", [], [])
-    let list = split_4C(addresses, ",")
-    func r(accum:List[Int], address:String)=
-    {invoke(this, "distributeRewardsB", [address], [])}
-    strict invokerrr = {FOLD<40>(list, [], r)}
-    strict bs = invoke(this, "burnSurf", [], [])
-    []
-}
-
-@Callable(i)
-func distributeRewardsB(address:String)= 
-if (i.caller != this) then throw("access only by project owner") else
-{
-    func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
-    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
-    let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
-
-    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
-    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
-    let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
-
-    func foldFuncC(acc:Int, SURFboard:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(SURFboard))
-    + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
-    let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
-
-    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
-    { 
-        let list = split_4C(addresses, ",")
-        let noNFTindex = value(indexOf(list, address))
-        let listMinusNoNFT = removeByIndex(list, noNFTindex)
-        let minusNoNFTstr = makeString(listMinusNoNFT, ",") + ","
-        [StringEntry(keyAddressesRegistered, minusNoNFTstr)]
-    }
-    else
-
-    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountPuzzle = fraction(tryGetInteger(this, keyPuzzleAmount), (shareWFS + (shareBBB * 10)), 110)
-    [
-    ScriptTransfer(addressFromStringValue(address), amountBurnxtn, burnxtn),
-    ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
-    ScriptTransfer(addressFromStringValue(address), amountWaves, unit),
-    ScriptTransfer(addressFromStringValue(address), amountRome, rome),
-    ScriptTransfer(addressFromStringValue(address), amountPuzzle, puzzle),
-    ScriptTransfer(addressFromStringValue(address), amountSURFboard * d6, surf)
-    ]
-}
 
 @Callable(i)
 func setRomeBalance(amount:Int)= 
