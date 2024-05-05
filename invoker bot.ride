@@ -20,6 +20,7 @@ func tryGetInteger (address:Address, key:String) = match getInteger(address, key
 let keyInvokeNext = "invoke next"
 let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
+let keyBotAddress = "bot address string"
 
 let d6 = 1000000
 let d8 = 100000000
@@ -27,7 +28,7 @@ let d8 = 100000000
 let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
 
 let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-let bot = Address(base58'123')
+let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
 @Callable(i)
 func invoker() = {
@@ -42,7 +43,7 @@ func invoker() = {
 
 @Callable(i)
 func invokerBBB() = 
-  if i.caller != bot then throw("no") else
+if i.caller != bot then throw("no") else
 {
   strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
   []
@@ -50,36 +51,43 @@ func invokerBBB() =
 
 @Callable(i)
 func BBB1() = 
-  if i.caller != this then throw("no") else
-  if getIntegerValue(bbb, keyActivated) + 7 * 1440 >= height then throw("no") else
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height then throw("no") else
   {
-    strict inv = invoke(bbb, "invokeClI1", [], [])
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
     [ScriptTransfer(bot, d6, unit)]
   }
 
 @Callable(i)
 func BBB2() = 
-  if i.caller != this then throw("no") else
-  if getIntegerValue(bbb, keyActivated2) + 7 * 1440 >= height then throw("no") else
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height then throw("no") else
   {
-    strict inv = invoke(bbb, "invoker2", [], [])
+    strict inv = invoke(bbb, "distribute", [], [])
     [ScriptTransfer(bot, d6, unit)]
   }
 
 @Callable(i)
 func BBB1any() = 
-  if getIntegerValue(bbb, keyActivated) + 7 * 1470 >= height then throw("no") else
-  if getIntegerValue(bbb, keyActivated) + 7 * 1440 >= height then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1442 > height then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height then throw("no") else
   {
-    strict inv = invoke(bbb, "invokeClI1", [], [])
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
     [ScriptTransfer(bot, d6, unit)]
   }
 
 @Callable(i)
 func BBB2any() = 
-  if getIntegerValue(bbb, keyActivated2) + 7 * 1470 >= height then throw("no") else
-  if getIntegerValue(bbb, keyActivated2) + 7 * 1440 >= height then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1442 > height then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height then throw("no") else
   {
-    strict inv = invoke(bbb, "invoker2", [], [])
+    strict inv = invoke(bbb, "distribute", [], [])
     [ScriptTransfer(bot, d6, unit)]
   }
+
+@Callable(i)
+func botAddress(address:String) =
+if i.caller != this then throw("no") else
+{
+    [StringEntry(keyBotAddress, address)]
+}
