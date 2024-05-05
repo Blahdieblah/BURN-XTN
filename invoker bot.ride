@@ -1,0 +1,85 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let keyInvokeNext = "invoke next"
+let keyActivated = "Activated blockheight"
+let keyActivated2 = "Activated 2 blockheight"
+
+let d6 = 1000000
+let d8 = 100000000
+
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+
+let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
+let bot = Address(base58'123')
+
+@Callable(i)
+func invoker() = {
+  strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
+  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
+    then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
+    else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
+  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
+  strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
+  []
+}
+
+@Callable(i)
+func invokerBBB() = 
+  if i.caller != bot then throw("no") else
+{
+  strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
+  []
+}
+
+@Callable(i)
+func BBB1() = 
+  if i.caller != this then throw("no") else
+  if getIntegerValue(bbb, keyActivated) + 7 * 1440 >= height then throw("no") else
+  {
+    strict inv = invoke(bbb, "invokeClI1", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB2() = 
+  if i.caller != this then throw("no") else
+  if getIntegerValue(bbb, keyActivated2) + 7 * 1440 >= height then throw("no") else
+  {
+    strict inv = invoke(bbb, "invoker2", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB1any() = 
+  if getIntegerValue(bbb, keyActivated) + 7 * 1470 >= height then throw("no") else
+  if getIntegerValue(bbb, keyActivated) + 7 * 1440 >= height then throw("no") else
+  {
+    strict inv = invoke(bbb, "invokeClI1", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB2any() = 
+  if getIntegerValue(bbb, keyActivated2) + 7 * 1470 >= height then throw("no") else
+  if getIntegerValue(bbb, keyActivated2) + 7 * 1440 >= height then throw("no") else
+  {
+    strict inv = invoke(bbb, "invoker2", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
