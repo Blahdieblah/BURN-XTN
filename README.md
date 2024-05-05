@@ -20,3 +20,12 @@ Function: "withdraw" claims vested XTN to dApp wallet.
 
 If the project actions dApp is not activated for 30 days, then functions can be called by anybody.
 AND access is granted to another wallet, AND after 90 days access to Puzzlemaster.
+
+# BBB & WFS NFTs
+dApp: https://waves-dapp.com/3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY
+
+According to tokenomics model: https://www.burnxtn.tech/nft-series
+
+dApp is callable by anybody 1442 blocks after last activation.
+Function: claimInvestPuzzle, claims Puzzle staking rewards, generateWithOneToken and stake BBB & WFS.
+Function: distribute, distribute rewards to all NFT holders.
