@@ -26,6 +26,6 @@ dApp: https://waves-dapp.com/3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY
 
 According to tokenomics model: https://www.burnxtn.tech/nft-series
 
-dApp is callable by anybody 1442 blocks after last activation, through dApp: https://waves-dapp.com/3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt
+dApp is callable by Galka after 7 * 1440 blocks, and by anybody after 7 * 1440 + 2 blocks since last activation, through dApp: https://waves-dapp.com/3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt
 Function: BBB1any, claims Puzzle staking rewards, generateWithOneToken and claim LP rewards BBB & WFS, stake PZ bbb.
 Function: BBB2any, distribute rewards to all NFT holders.
