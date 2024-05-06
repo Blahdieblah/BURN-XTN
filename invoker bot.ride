@@ -31,7 +31,8 @@ let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
 @Callable(i)
-func invoker() = {
+func invoker() = 
+{
   strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
   strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
     then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
@@ -52,16 +53,18 @@ if i.caller != bot then throw("no") else
 @Callable(i)
 func BBB1() = 
 if i.caller != this then throw("no") else
-if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height then throw("no") else
-  {
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440)) else
+{
     strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
     [ScriptTransfer(bot, d6, unit)]
-  }
+}
 
 @Callable(i)
 func BBB2() = 
 if i.caller != this then throw("no") else
-if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
   {
     strict inv = invoke(bbb, "distribute", [], [])
     [ScriptTransfer(bot, d6, unit)]
@@ -69,8 +72,8 @@ if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height then throw("no") else
 
 @Callable(i)
 func BBB1any() = 
-if getIntegerValue(bbb, keyActivated) + 7 * 1442 > height then throw("no") else
-if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
   {
     strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
     [ScriptTransfer(bot, d6, unit)]
@@ -78,8 +81,8 @@ if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height then throw("no") else
 
 @Callable(i)
 func BBB2any() = 
-if getIntegerValue(bbb, keyActivated2) + 7 * 1442 > height then throw("no") else
-if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2)) else
   {
     strict inv = invoke(bbb, "distribute", [], [])
     [ScriptTransfer(bot, d6, unit)]
