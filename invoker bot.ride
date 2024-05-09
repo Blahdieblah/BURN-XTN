@@ -22,11 +22,18 @@ let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
 let keyBotAddress = "bot address string"
 
+let keyBurnAmount = "burn amount"
+let keyBurnxtnAmount = "burn BURN-XTN amount"
+
 let d6 = 1000000
 let d8 = 100000000
 
 let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 
+let burn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
 let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
@@ -74,6 +81,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2
 func BBB1any() = 
 if getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2 > height 
 then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 2 then throw("invoke BBB2any first") else
   {
     strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
     [ScriptTransfer(bot, d6, unit)]
@@ -83,6 +91,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated)
 func BBB2any() = 
 if getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2 > height 
 then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") else
   {
     strict inv = invoke(bbb, "distribute", [], [])
     [ScriptTransfer(bot, d6, unit)]
@@ -94,3 +103,45 @@ if i.caller != this then throw("no") else
 {
     [StringEntry(keyBotAddress, address)]
 }
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
+
+@Callable(i)
+func burnXTN() = 
+if (i.caller != this) then throw("access only by project owner") else {
+
+  let xtnBurn = Burn(xtnId, tryGetInteger(burn, keyBurnAmount))
+  let surfBurn = Burn(surfId, tryGetInteger(burn, keyBurnAmount))
+  let burnxtnBurn = Burn(burnxtnId, tryGetInteger(burn, keyBurnxtnAmount))
+    [
+    xtnBurn,
+    surfBurn,
+    burnxtnBurn,
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + tryGetInteger(burn, keyBurnAmount)),
+    IntegerEntry("XTN supply", match assetInfo(xtnId) {
+    case asset:Asset =>
+        (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
+    case _ => throw("Can't find asset")
+    }),
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + tryGetInteger(burn, keyBurnAmount)),
+    IntegerEntry("SURF supply", match assetInfo(surfId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset") }),
+    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")}),
+    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")})
+    ]
+}
+
+
+
+    
