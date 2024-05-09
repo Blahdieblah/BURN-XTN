@@ -1,0 +1,237 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+let d8 = 100000000
+let d6 = 1000000
+
+let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
+let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
+let puzzleMarket = Address(base58'3PATXDVE53rKJtkwXYV3tvuLVS2fDtGtKCc')
+let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+
+let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let waves = base58'WAVES'
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
+let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
+let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
+
+let puzzleStaked = tryGetInteger(puzzleStaking, toString(this) + "_staked")
+let puzzleInPool = tryGetInteger(Address(poolBBB), ("global_" + toBase58String(puzzle)) + "_balance")
+let projectStake = tryGetInteger(Address(poolBBB), (toString(this) + "_indexStaked"))
+let totalStake = tryGetInteger(Address(poolBBB), ("global_poolToken_amount"))
+let assetWeight = tryGetInteger(Address(poolBBB), ("static_" + toBase58String(puzzle)) + "_weight")
+let BBBlpInPuzzle = fraction(puzzleInPool / assetWeight * 10000, projectStake, totalStake)
+let totalPuzzle = puzzleStaked + BBBlpInPuzzle + assetBalance(this, puzzle)
+
+let keyAddressesRegistered = "Addresses registered"
+let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
+let keyBurnxtnAmount = "BURN-XTN total rewards"
+let keyRomeAmount = "ROME total rewards"
+let keyPuzzleAmount = "PUZZLE total rewards"
+let keyWavesAmount = "WAVES total rewards"
+let keyWhirlpoolAmount = "WHIRLPOOL total rewards"
+let keyTotalPuzzleValue = "Total puzzle value"
+
+let keyTotalBurnxtnPaid = "Total BURN-XTN paid"
+let keyTotalWhirlpoolPaid = "Total WHIRLPOOL paid"
+let keyTotalRomePaid = "Total ROME paid"
+let keyTotalWavesPaid = "Total WAVES paid"
+let keyTotalPuzzlePaid = "Total PUZZLE paid"
+let keyRomeBalance = "ROME balance"
+let keyInvokeNext = "invoke next"
+let keyTradeMode = "trade mode"
+
+let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
+let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
+let SURFboardList = [
+    "DzLSgEaBB4UNbPCZekPSzbQ85KokMB7d1KRRmzUPu5hs",
+    "WmWzsbb3PNvzJ4w4Fb73KcoNGLXumgYZagV22zEiX1w",
+    "7RrxbgayUksPHrA799pKuCr61reT8nENdqCkgVHPgaN2",
+    "FmDLfzspbVJeKhKduLDUba2HoVdRrKtswDKMU3e9qjtP",
+    "HmQvVyQdEjafLrpKPSigdafvcYvLbNYGEgVCxLZRWt1y",
+    "2rVxNMXuvug74TorLQZGC2ERHjAbJnVUgNXQ1kJmtnAe",
+    "9yb9yGJm6gzVozBHuQVHBdAnzfct3N9bRpdjjNUnrzcC",
+    "s1SfGVshf2jKCA9KvvKKvUuK8utp3Ne3ee8Lp6KKLRw",
+    "3E3yb7TvDK762dn11dmRLwapghaefQUEyunVdXSNp4tB",
+    "FH75TvApyVtfd9X5a1Ar19Ns9DNJvzpzLFE5pjh1wi4h",
+    "EgqkbDyWRPgVNVqtEEtRSzWcGD33orVoE2bzYdAdieQS",
+    "DsKyJpJCZcFv9jSnQbQVG4Jx3WSP1KtfHhAKTkSKrVBj",
+    "AesPr5UFDgY5jZXYUZ8JkbYtJovVdDHby15SCksEhmJK",
+    "AVsfdqw2m5aUNxa1HY9emLmCLBfVAGTxVu4ef3xEDKC8",
+    "5jdvSSY2K7h8UiUCXUgK9T7zfMryqw2itKP8BysdXDDk",
+    "A4voKZes8MVDAXyQjKkb6bdEcqMbvB4ptzbpqYqveG5n",
+    "34oZKaWHpSJrZvGLdYu5WG8WWXg7rwF2HHx8K15GfUCQ",
+    "77McCHkmNrRM4DjqkSM9B8YjuJcKtn67jQge1pzZrQ8T",
+    "7NEFBnvGGMfYdBnhMLNpuVgS22LpcgXCZgHfm8DHmmiA",
+    "GoF9yokxHgPNoxoWgjjdmGeWhcLYArSsxqffRtfYGtfs"
+]
+
+@Callable(i)
+func claimInvestPuzzle()= 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
+{
+    strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
+    strict inv = 
+      if (getBooleanValue(this, keyTradeMode) == true) then
+      invoke(Address(poolBBB), "claimIndexRewards", [], []) else
+      if (assetBalance(this, puzzle) > 0) then
+      invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
+
+    strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
+      invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
+    [
+    IntegerEntry("Activated blockheight", height),
+    IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
+    IntegerEntry(keyRomeAmount, if (getBooleanValue(this, keyTradeMode) == true) then 0 else
+      assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
+    IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
+    IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool)),
+    ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
+    IntegerEntry(keyInvokeNext, 2),
+    IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
+    IntegerEntry("puzzle staked", puzzleStaked),
+    IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
+    IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle),
+    IntegerEntry("WFS puzzle value", fraction(
+      fraction(tryGetInteger(this, keyTotalPuzzleValue),
+      1, 
+      110),
+        10,
+        9)),
+    IntegerEntry("BBB puzzle value", fraction(
+      fraction(tryGetInteger(this, keyTotalPuzzleValue),
+      10, 
+      110),
+        10,
+        9))
+    ]
+}
+
+@Callable(i)
+func distribute()= 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
+{
+    strict t = invoke(this, "trackTotalPaid", [], [])
+    let list = split_4C(addresses, ",")
+    func r(accum:List[Int], address:String)=
+    {invoke(this, "distributeRewards", [address], [])}
+    strict invokerrr = {FOLD<40>(list, [], r)}
+    strict bs = invoke(this, "burnSurf", [], [])
+    [
+    IntegerEntry("Activated 2 blockheight", height),
+    ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
+    IntegerEntry(keyInvokeNext, 1)
+    ]
+}
+
+@Callable(i)
+func trackTotalPaid()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+  let amountBurnxtn = tryGetInteger(this, keyBurnxtnAmount)
+  let amountWhirlpool = tryGetInteger(this, keyWhirlpoolAmount)
+  let amountWaves = tryGetInteger(this, keyWavesAmount)
+  let amountRome = tryGetInteger(this, keyRomeAmount)
+  [
+  IntegerEntry(keyTotalBurnxtnPaid, amountBurnxtn + tryGetInteger(this, keyTotalBurnxtnPaid)),
+  IntegerEntry(keyTotalWhirlpoolPaid, amountWhirlpool + tryGetInteger(this, keyTotalWhirlpoolPaid)),
+  IntegerEntry(keyTotalWavesPaid, amountWaves + tryGetInteger(this, keyTotalWavesPaid)),
+  IntegerEntry(keyTotalRomePaid, amountRome + tryGetInteger(this, keyTotalRomePaid))
+  ]  
+}
+
+@Callable(i)
+func distributeRewards(address:String)= 
+if (i.caller != this) then throw("access only by project owner") else
+{
+    func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
+    + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
+    let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
+
+    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
+    + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
+    let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
+
+    func foldFuncC(acc:Int, SURFboard:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(SURFboard))
+    + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
+    let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
+
+    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
+    { 
+        let list = split_4C(addresses, ",")
+        let noNFTindex = value(indexOf(list, address))
+        let listMinusNoNFT = removeByIndex(list, noNFTindex)
+        let minusNoNFTstr = makeString(listMinusNoNFT, ",") + ","
+        [StringEntry(keyAddressesRegistered, minusNoNFTstr)]
+    }
+    else
+
+    let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), 110)
+    let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), 110)
+    [
+    ScriptTransfer(addressFromStringValue(address), amountBurnxtn, burnxtn),
+    ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
+    ScriptTransfer(addressFromStringValue(address), amountWaves, unit),
+    ScriptTransfer(addressFromStringValue(address), amountRome, rome),
+    ScriptTransfer(addressFromStringValue(address), amountSURFboard * d6, surf)
+    ]
+}
+
+@Callable(i)
+func burnSurf()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [
+  Burn(surf, d6),
+  IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + d6)
+  ]
+}
+
+@Callable(i)
+func register() =
+if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
+if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
+{[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]}
+
+@Callable(i)
+func setRomeBalance(amount:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyRomeBalance, amount * d6)]}
+
+@Callable(i)
+func deleteEntry() = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[DeleteEntry(keyAddressesRegistered)]}
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
+
+@Callable(i)
+func setTradeMode(tradeMode:Boolean) =
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [BooleanEntry(keyTradeMode, tradeMode)]
+}
