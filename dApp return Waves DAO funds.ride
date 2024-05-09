@@ -21,17 +21,19 @@ let unlockBlock2 = (90 * 1440)
 let PuzzleMasterPubKey = base58'4z8CKSYQBKkzx7PBb5uBP1YPa6YAHRNTApW1sQVHT5eU' # Vladimir and Ania Address: 3PLjwHcz9NEuaTo63NZR9B9okQiKQxZSbmf
 
 let burnxtnpoolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
-let burnxtnString = toBase58String(burnxtnpoolId)
-
 let burnxpptpoolId = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx' # = BURN-XTN x PepeTeam
-let burnxpptString = toBase58String(burnxpptpoolId)
+let whirlpoolpoolId = base58'3P2myTbd5zpEHcYmNpdWTp5gXS5B8tL1RCY'
+let burnxtnswavesId = base58'3PK4ZxDsRB8pNSuiYbco9K8BchqnhhKwYsq'
 
 let burnxtn_pz_amount = getIntegerValue(Address(burnxtnpoolId), (toString(this) + "_indexStaked"))
 let burnxppt_pz_amount = getIntegerValue(Address(burnxpptpoolId), (toString(this) + "_indexStaked"))
+let burnxtnswaves_pz_amount = getIntegerValue(Address(burnxtnswavesId), (toString(this) + "_indexStaked"))
 let activated = getIntegerValue(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "Activated blockheight")
 
 let PZ_burnxtn_id = base58'GdrDHazRGcCYeCgDEZzLpsZ3E7jmrxYB7EDUiGfiVAr1'
 let PZ_burnxtnppt_id = base58'2r5xCUHFLQVHKNC5k6qqRnDTT485KvKwAtbNtM2Wy4wW'
+let PZ_whirlpool_id = base58'4ogHLDYJevjxU1XAQjynbKNE1rYrFvLdET2gDLnA9TiL'
+let PZ_burnxtnswaves_id = base58'HXbKm7u7B4U2WEeK4L9pmUsP2ToypATt9vsafssAEMQG'
 let WX_burnxtnwaves_id = base58'GyiHdcN59sZ46baFvj68ruLngrTPEvWDtsd6jHm4o46n'
 let WX_peteburnxtn_id = base58'3MPHMJVwYGyeBLRsH1RsYhrTmemv752AEBwuFFV7g49Z'
 
@@ -51,13 +53,30 @@ strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString
 }
 
 @Callable(i)
-func burnxppt() = 
+func burnxtnxppt() = 
 if (i.caller != this) then throw("access only by project owner") else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
 strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, assetBalance(this, PZ_burnxtnppt_id))])
 []
 }   
+
+@Callable(i)
+func burnxtnswaves() = 
+if (i.caller != this) then throw("access only by project owner") else
+{
+strict unstakeIndex = invoke(Address(burnxtnswavesId), "unstakeIndex", [burnxtnswaves_pz_amount], [])
+strict stakeIndexFor = invoke(Address(burnxtnswavesId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnswaves_id, assetBalance(this, PZ_burnxtnswaves_id))])
+[]
+}   
+
+@Callable(i)
+func whirlpool1() = 
+if (i.caller != this) then throw("access only by project owner") else
+{
+strict stakeIndexFor = invoke(Address(whirlpoolpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_whirlpool_id, 1)])
+[]
+}
 
 @Callable(i)
 func burnxtnAny() = 
@@ -70,12 +89,22 @@ strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString
 }
 
 @Callable(i)
-func burnxpptAny() = 
+func burnxtnxpptAny() = 
 if (height < getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)
 then throw("Wait till blockheight" + toString(getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)) else
 {
 strict unstakeIndex = invoke(Address(burnxpptpoolId), "unstakeIndex", [burnxppt_pz_amount], [])
 strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, assetBalance(this, PZ_burnxtnppt_id))])
+[]
+}
+
+@Callable(i)
+func burnxtnswavesAny() = 
+if (height < getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)
+then throw("Wait till blockheight" + toString(getIntegerValue(burnxtnProjectAddress, "Activated blockheight") + 30 * 1440)) else
+{
+strict unstakeIndex = invoke(Address(burnxtnswavesId), "unstakeIndex", [burnxtnswaves_pz_amount], [])
+strict stakeIndexFor = invoke(Address(burnxtnswavesId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnswaves_id, assetBalance(this, PZ_burnxtnswaves_id))])
 []
 }  
 
