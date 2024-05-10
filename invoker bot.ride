@@ -33,8 +33,11 @@ let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 
-let burn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
+let burn = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') #Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
 let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
+let swe = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
+let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
+let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
 @Callable(i)
@@ -111,7 +114,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func burnXTN() = 
-if (i.caller != this) then throw("access only by project owner") else {
+if (i.caller != this && i.caller != burn) then throw("access only by project owner") else {
 
   let xtnBurn = Burn(xtnId, tryGetInteger(burn, keyBurnAmount))
   let surfBurn = Burn(surfId, tryGetInteger(burn, keyBurnAmount))
@@ -142,6 +145,32 @@ if (i.caller != this) then throw("access only by project owner") else {
     ]
 }
 
+@Callable(i)
+func invokerAllin() = 
+if 
+#i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
+if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
+{
+  strict inv = invoke(swe, "allin", [], [])
+  strict inv2 = invoke(whi, "allin", [], [])
+  [
+  #ScriptTransfer(bot, d6, unit)
+  ]
+}
 
-
-    
+@Callable(i)
+func invokerAllout() = 
+if 
+#i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
+if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
+{
+  strict inv = invoke(swe, "allout", [], [])
+  strict inv2 = invoke(whi, "allout", [], [])
+  [
+  #ScriptTransfer(bot, d6, unit)
+  ]
+}    
