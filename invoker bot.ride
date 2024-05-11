@@ -33,7 +33,9 @@ let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 
-let burn = Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') #Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
+let burn = 
+  Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') 
+  #Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
 let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 let swe = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
 let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
@@ -115,62 +117,51 @@ if (i.caller != this) then throw("access only by project owner") else
 @Callable(i)
 func burnXTN() = 
 if (i.caller != this && i.caller != burn) then throw("access only by project owner") else {
-
-  let xtnBurn = Burn(xtnId, tryGetInteger(burn, keyBurnAmount))
-  let surfBurn = Burn(surfId, tryGetInteger(burn, keyBurnAmount))
-  let burnxtnBurn = Burn(burnxtnId, tryGetInteger(burn, keyBurnxtnAmount))
+  let xtnBurnAmount = if assetBalance(this, xtnId) >= tryGetInteger(burn, keyBurnAmount) then tryGetInteger(burn, keyBurnAmount) else 0
+  let xtnBurn = Burn(xtnId, xtnBurnAmount)  
+  let surfBurnAmount = if assetBalance(this, surfId) >= tryGetInteger(burn, keyBurnAmount) then tryGetInteger(burn, keyBurnAmount) else 0
+  let surfBurn = Burn(surfId, surfBurnAmount)
+  let burnxtnBurnAmount = if assetBalance(this, burnxtnId) >= tryGetInteger(burn, keyBurnxtnAmount) then tryGetInteger(burn, keyBurnxtnAmount) else 0
+  let burnxtnBurn = Burn(burnxtnId, burnxtnBurnAmount)
     [
     xtnBurn,
     surfBurn,
     burnxtnBurn,
-    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + tryGetInteger(burn, keyBurnAmount)),
-    IntegerEntry("XTN supply", match assetInfo(xtnId) {
-    case asset:Asset =>
-        (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
-    case _ => throw("Can't find asset")
-    }),
-    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + tryGetInteger(burn, keyBurnAmount)),
-    IntegerEntry("SURF supply", match assetInfo(surfId) {
-    case asset:Asset =>
-        asset.quantity / d6
-    case _ => throw("Can't find asset") }),
-    IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
-    case asset:Asset =>
-        asset.quantity / d8
-    case _ => throw("Can't find asset")}),
-    IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
-    case asset:Asset =>
-        asset.quantity / d8
-    case _ => throw("Can't find asset")})
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnBurnAmount),
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
     ]
 }
 
 @Callable(i)
-func invokerAllin() = 
+func invokerBurn1() = 
 if 
 #i.caller != bot && 
 i.caller != s then throw("no") else
 if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
 if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
 {
+  strict inv1 = invoke(burn, "invoke1", [], [])
   strict inv = invoke(swe, "allin", [], [])
   strict inv2 = invoke(whi, "allin", [], [])
   [
-  #ScriptTransfer(bot, d6, unit)
+  ScriptTransfer(bot, if (getIntegerValue(this, keyInvokeNext) == 2) then 0 else d6, unit),
+  IntegerEntry(keyInvokeNext, 2)
   ]
 }
 
 @Callable(i)
-func invokerAllout() = 
+func invokerBurn2() = 
 if 
 #i.caller != bot && 
 i.caller != s then throw("no") else
 if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 {
+  strict inv1 = invoke(burn, "invoke2", [], [])
   strict inv = invoke(swe, "allout", [], [])
   strict inv2 = invoke(whi, "allout", [], [])
   [
-  #ScriptTransfer(bot, d6, unit)
+  ScriptTransfer(bot, if (getIntegerValue(this, keyInvokeNext) == 1) then 0 else d6, unit),
+  IntegerEntry(keyInvokeNext, 1)
   ]
 }    
