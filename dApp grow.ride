@@ -95,10 +95,9 @@ let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial
 let surfAddress = Address(base58'3PBiotFpqjRMkkeFBccnQNUXUopy7KFez5C')
 let surfStaking = getIntegerValue(surfAddress, "%s%s%s__paramByUser__" + toString(this) + "__amount") / d6
 
-
 @Callable(i)
 func invoke1() = 
-if (i.caller != this) then throw("access only by project owner") else 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
   strict claimInv = invoke(Address(poolSWAVES), "claimIndexRewards", [], [])
@@ -108,29 +107,16 @@ if (i.caller != this) then throw("access only by project owner") else
 
   strict withdrawSwopGov = invoke(swopGov, "claimAndWithdrawSWOP", [], [])
   strict stakeSwopFarming = invoke(swopFarm, "claimAllAndStake", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG"]], [])
-
-  strict withdrawSWAVES = invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))])
-  strict lpWavesXtn = 
-    if assetBalance(this, xtnId) > 2 * tryGetInteger(this, keyBurnAmount) 
-    && wavesBalance(this).available > d8 then
-    invoke(swopSC, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId) - 2 * tryGetInteger(this, keyBurnAmount))]) else unit
-  strict inv = invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)])
   [
   IntegerEntry(keyBurnxtnAmount, burnxtnDifference),
   ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
-  IntegerEntry("BURN-XTN / WAVES price in wavelets", burnxtnwavesprice),
-  IntegerEntry("Price growth %", pricegrowth),
-  IntegerEntry("ATH in wavelets", ATH),
-  IntegerEntry("BURN-XTN / USD price in centlets", burnxtnusdprice),
-  IntegerEntry("ATH in centlets", ATHusd),
-  IntegerEntry("Activated blockheight", height),
-  IntegerEntry("Waves/USD price", wavesusdprice)
+  IntegerEntry("Activated blockheight", height)
   ]
 }
 
 @Callable(i)
 func invoke2() = 
-if (i.caller != this) then throw("access only by project owner") else 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   strict inv1 = invoke(this, "bbbAndTransfer", [], [])
   strict inv2 = invoke(this, "burn", [], [])
@@ -142,15 +128,23 @@ if (i.caller != this) then throw("access only by project owner") else
 func bbbAndTransfer() =
 if (i.caller != this) then throw("access only by project owner") else
 {
-    strict inv = if (assetBalance(this, puzzle) > 0) then
-      invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
-    strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
-      invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
-    strict swapXtnSurf = invoke(swopXTNsurf, "callFunction", ["exchange", ["1"]], [AttachedPayment(xtnId, tryGetInteger(this, keyBurnAmount))])
-    [
-    ScriptTransfer(invoker, tryGetInteger(this, keyBurnAmount), xtnId),
-    ScriptTransfer(invoker, tryGetInteger(this, keyBurnAmount), surfId)
-    ]
+  strict withdrawSWAVES = if assetBalance(this, sW) > 0 then invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))]) else unit
+  strict lpWavesXtn = 
+    if assetBalance(this, xtnId) > 2 * tryGetInteger(this, keyBurnAmount) 
+    && wavesBalance(this).available > d8 then
+    invoke(swopSC, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId) - 2 * tryGetInteger(this, keyBurnAmount))])
+    else unit
+  strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
+
+  strict inv = if (assetBalance(this, puzzle) > 0) then
+    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
+  strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
+    invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
+  strict swapXtnSurf = if assetBalance(this, xtnId) > 2 * tryGetInteger(this, keyBurnAmount) then invoke(swopXTNsurf, "callFunction", ["exchange", ["1"]], [AttachedPayment(xtnId, tryGetInteger(this, keyBurnAmount))]) else unit
+  [
+  ScriptTransfer(invoker, if assetBalance(this, xtnId) >= tryGetInteger(this, keyBurnAmount) then tryGetInteger(this, keyBurnAmount) else 0, xtnId),
+  ScriptTransfer(invoker, if assetBalance(this, surfId) >= tryGetInteger(this, keyBurnAmount) then tryGetInteger(this, keyBurnAmount) else 0, surfId)
+  ]
 }
 
 @Callable(i)
@@ -165,8 +159,41 @@ if (i.caller != this) then throw("access only by project owner") else
 func burnAmount(amount:Int) =
 if (i.caller != this) then throw("access only by project owner") else 
 {[IntegerEntry(keyBurnAmount, amount 
-#* d6
+#* d6 / 7
 )]}
+
+@Callable(i)
+func projectStats() =
+{
+  [
+  IntegerEntry("BURN-XTN/WAVES price in wavelets", burnxtnwavesprice),
+  IntegerEntry("Price growth %", pricegrowth),
+  IntegerEntry("ATH in wavelets", ATH),
+  IntegerEntry("BURN-XTN/USD price in centlets", burnxtnusdprice),
+  IntegerEntry("ATH in centlets", ATHusd),
+  IntegerEntry("Waves/USD price", wavesusdprice),
+    
+  IntegerEntry("XTN total burned", getIntegerValue(invoker, "XTN total burned")),
+  IntegerEntry("XTN supply", match assetInfo(xtnId) {
+    case asset:Asset =>
+        (asset.quantity - assetBalance(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), xtnId)) / d6
+    case _ => throw("Can't find asset")
+    }),
+  IntegerEntry("SURF total burned", tryGetInteger(invoker, "SURF total burned")),
+  IntegerEntry("SURF supply", match assetInfo(surfId) {
+    case asset:Asset =>
+        asset.quantity / d6
+    case _ => throw("Can't find asset") }),
+  IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")}),
+  IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")})
+  ]
+}
 
 @Callable(i)
 func withdraw() = 
