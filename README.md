@@ -4,11 +4,7 @@ dApp: https://waves-dapp.com/3PAucbbumdUXmhzcR421zGiayphEdo2tRoz
 According to tokenomics model: https://www.burnxtn.tech
 
 ## If dApp is not activated by project owner
-After 8 days callable by anybody, the dApp function: 
-- PumpByAnybody1
-- PumpByAnybody2
- 
-This function performs tokenomics mode: PUMP
+To be updated soon.
 
 # Waves DAO unstake and return funds
 
