@@ -40,6 +40,7 @@ let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 let swe = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
 let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
 let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
+let iv = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
 @Callable(i)
@@ -194,6 +195,8 @@ if lastBlock.timestamp % 86400000 > 50941000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 4 then throw("invoke other invokerBurn first") else
 {
   strict inv2 = invoke(whi, "allout", [], [])
+  strict claim = invoke(iv, "claim", [], [])
+  strict stake = invoke(iv, "stakeUnstake", [true, 0], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 1)
