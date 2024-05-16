@@ -12,12 +12,16 @@ func tryGetInteger (address:Address, key:String)= match getInteger(address, key)
 
 let keyBurnAmount = "burn amount"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
+let keyMaxBurn = "max amount burn"
+let keyMaxSwap = "max amount swap"
 
 let sWsc = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
-let swopSC = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
+let swopWAVESxtn = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
 let swopFarm = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
 let swopGov = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
 let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
+let swopSWOPxtn = Address(base58'3P27S9V36kw2McjWRZ37AxTx8iwkd7HXw6W')
+let swopPUZZLExtn = Address(base58'3PBHyEwmERR1CEkrTNbPj2bgyisTfPRqfee')
 let swopBoost = Address(base58'3PQZWxShKGRgBN1qoJw6B4s9YWS9FneZTPg')
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
 
@@ -100,6 +104,9 @@ let surfStaking = getIntegerValue(surfAddress, "%s%s%s__paramByUser__" + toStrin
 func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
   {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
 
+func swapAmount(assetid:ByteVector) = 
+{if assetBalance(this, assetid) > getIntegerValue(keyMaxSwap) then getIntegerValue(keyMaxSwap) else assetBalance(this, assetid)}
+
 @Callable(i)
 func invoke1() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
@@ -110,7 +117,15 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 
   strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
 
-  strict withdrawSwopGov = invoke(swopGov, "claimAndWithdrawSWOP", [], [])
+  strict withdrawSwopGov = if getIntegerValue(swopGov, toString(this) + "_user_available_for_claim") != 0 
+    then invoke(swopGov, "claimAndWithdrawSWOP", [], []) else unit
+
+  strict xtnBalanceBefore = assetBalance(this, xtnId)
+  strict swapSwopXtn = if assetBalance(this, swopId) >= 10000 && swapAmount(swopId) >= 10000 
+    then invoke(swopSWOPxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(swopId, swapAmount(swopId))]) else unit
+  let xtnDifference = assetBalance(this, xtnId) - xtnBalanceBefore
+  strict swapXtnPuzzle = if xtnDifference >= 100 
+    then invoke(swopPUZZLExtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(xtnId, xtnDifference)]) else unit
   [
   IntegerEntry(keyBurnxtnAmount, burnxtnDifference),
   ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
@@ -126,7 +141,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   strict lpWavesXtn = 
     if assetBalance(this, xtnId) > 3 * tryGetInteger(this, keyBurnAmount) 
     && wavesBalance(this).available > d8 then
-    invoke(swopSC, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId) - 3 * tryGetInteger(this, keyBurnAmount))])
+    invoke(swopWAVESxtn, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId) - 3 * tryGetInteger(this, keyBurnAmount))])
     else unit
   strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
 
@@ -154,17 +169,29 @@ func invoke3() =
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   strict burn = invoke(invoker, "burnXTN", [], [])
-  strict swap = if assetBalance(this, wxId) > 0 then swapWX(wxId, base58'WAVES', assetBalance(this, wxId)) else unit
+  strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', swapAmount(wxId)) else unit
   strict stats = invoke(this, "projectStats", [], [])
   []
 }
 
 @Callable(i)
 func burnAmount(amount:Int) =
+if (i.caller != this) then throw("access only by project owner") else
+if amount > getIntegerValue(keyMaxBurn) then throw(keyMaxBurn) else 
+{[IntegerEntry(keyBurnAmount, amount * d6 / 7)]}
+#{[IntegerEntry(keyBurnAmount, amount)]} # test
+
+@Callable(i)
+func maxAmount(maxBurnInput:Int, maxSwap:Int) =
 if (i.caller != this) then throw("access only by project owner") else 
-{[IntegerEntry(keyBurnAmount, amount 
-* d6 / 7
-)]}
+{
+  [
+  IntegerEntry(keyMaxBurn, maxBurnInput),
+  IntegerEntry(keyMaxSwap, maxSwap * d8)
+#  IntegerEntry(keyMaxBurn, maxBurn), # test
+#  IntegerEntry(keyMaxSwap, maxSwap) # test
+  ]
+}
 
 @Callable(i)
 func stakeBoostSwopFarming() =
@@ -206,7 +233,7 @@ func projectStats() =
   IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
     case asset:Asset =>
         asset.quantity / d8
-    case _ => throw("Can't find asset")})
+    case _ => throw("Can't find asset")}) # count data tx from this line
   ]
 }
 
