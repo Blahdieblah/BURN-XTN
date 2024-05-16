@@ -23,6 +23,7 @@ let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
 let swopSWOPxtn = Address(base58'3P27S9V36kw2McjWRZ37AxTx8iwkd7HXw6W')
 let swopPUZZLExtn = Address(base58'3PBHyEwmERR1CEkrTNbPj2bgyisTfPRqfee')
 let swopBoost = Address(base58'3PQZWxShKGRgBN1qoJw6B4s9YWS9FneZTPg')
+let swopStaking = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
 
 let d6 = 1000000
@@ -197,8 +198,10 @@ if (i.caller != this) then throw("access only by project owner") else
 func stakeBoostSwopFarming() =
 if (i.caller != this) then throw("access only by project owner") else 
 {
-  strict stakeSwopFarming = invoke(swopFarm, "claimAllAndStake", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG"]], [])
-  let amount = getIntegerValue(swopBoost, "3PAucbbumdUXmhzcR421zGiayphEdo2tRoz_3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_user_vote_gSWOP")
+  strict stakeSwopFarming = if getIntegerValue(swopStaking, (toString(this) + "_user_available_for_claim")) > 0 
+    then invoke(swopFarm, "claimAllAndStake", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG"]], []) else unit
+  let amount = getIntegerValue(swopGov, (toString(this) + "_GSwop_amount"))
+  #getIntegerValue(swopBoost, "3PAucbbumdUXmhzcR421zGiayphEdo2tRoz_3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_user_vote_gSWOP")
   strict boost = invoke(swopBoost, "votePoolWeight", ["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG", amount], [])
   []
 }
