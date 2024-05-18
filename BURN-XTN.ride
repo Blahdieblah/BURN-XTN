@@ -118,8 +118,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 
   strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
 
-  strict withdrawSwopGov = if getIntegerValue(swopGov, toString(this) + "_user_available_for_claim") != 0 
-    then invoke(swopGov, "claimAndWithdrawSWOP", [], []) else unit
+  strict withdrawSwopGov = invoke(swopGov, "claimAndWithdrawSWOP", [], [])
 
   strict xtnBalanceBefore = assetBalance(this, xtnId)
   strict swapSwopXtn = if assetBalance(this, swopId) >= 10000 && swapAmount(swopId) >= 10000 
