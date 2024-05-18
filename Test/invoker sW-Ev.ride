@@ -1,0 +1,230 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let keyInvokeNext = "invoke next"
+let keyActivated = "Activated blockheight"
+let keyActivated2 = "Activated 2 blockheight"
+let keyBotAddress = "bot address string"
+
+let keyBurnAmount = "burn amount"
+let keyBurnxtnAmount = "burn BURN-XTN amount"
+let keyDisableEv = "disable Ev"
+
+let d6 = 1000000
+let d8 = 100000000
+
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+
+let burn = 
+  #Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') 
+  Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
+let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
+let swe = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
+let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
+let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
+let iv = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
+let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
+
+@Callable(i)
+func invoker() = 
+{
+  strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
+  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
+    then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
+    else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
+  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
+  strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
+  []
+}
+
+@Callable(i)
+func invokerBBB() = 
+if i.caller != bot then throw("no") else
+{
+  strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
+  []
+}
+
+@Callable(i)
+func BBB1() = 
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440)) else
+{
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
+func BBB2() = 
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+  {
+    strict inv = invoke(bbb, "distribute", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB1any() = 
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 2 then throw("invoke BBB2any first") else
+  {
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB2any() = 
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") else
+  {
+    strict inv = invoke(bbb, "distribute", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func botAddress(address:String) =
+if i.caller != this then throw("no") else
+{
+    [StringEntry(keyBotAddress, address)]
+}
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
+
+@Callable(i)
+func burnXTN() = 
+if (i.caller != this && i.caller != burn) then throw("access only by project owner") else 
+{
+  let xtnBurnAmount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnBurnAmount)  
+  let surfBurnAmount = assetBalance(this, surfId)
+  let surfBurn = Burn(surfId, surfBurnAmount)
+  let burnxtnBurnAmount = assetBalance(this, burnxtnId)
+  let burnxtnBurn = Burn(burnxtnId, burnxtnBurnAmount)
+    [
+    xtnBurn,
+    surfBurn,
+    burnxtnBurn,
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnBurnAmount),
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
+    ]
+}
+
+@Callable(i)
+func invokerBurn1() = 
+if 
+i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
+if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
+if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
+{
+  strict inv1 = reentrantInvoke(burn, "invoke1", [], [])
+  strict inv = if getBoolean(keyDisableEv) == true then unit else invoke(swe, "allin", [], [])
+  strict inv2 = if getBoolean(keyDisableEv) == true then unit else invoke(whi, "allin", [], [])
+  [
+  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  IntegerEntry(keyInvokeNext, 2)
+  ]
+}
+
+@Callable(i)
+func invokerBurn2() = 
+if 
+i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
+if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
+if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
+{
+  strict inv1 = reentrantInvoke(burn, "invoke2", [], [])
+  [
+  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  IntegerEntry(keyInvokeNext, 3)
+  ]
+}    
+
+@Callable(i)
+func invokerBurn3() = 
+if 
+i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
+if lastBlock.timestamp % 86400000 > 50821000 then throw("too late") else
+if tryGetInteger(this, keyInvokeNext) != 3 then throw("invoke other invokerBurn first") else
+{
+  strict inv1 = reentrantInvoke(burn, "invoke3", [], [])
+  strict inv2 = if getBoolean(keyDisableEv) == true then unit else invoke(whi, "allout", [], [])
+  strict inv3 = invoke(swe, "sGrid", [], [])
+  [
+  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  IntegerEntry(keyInvokeNext, 4)
+  ]
+} 
+
+@Callable(i)
+func invokerBurn4() = 
+if 
+i.caller != bot && 
+i.caller != s then throw("no") else
+if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
+if lastBlock.timestamp % 86400000 > 50941000 then throw("too late") else
+if tryGetInteger(this, keyInvokeNext) != 4 then throw("invoke other invokerBurn first") else
+{
+  strict inv2 = if getBoolean(keyDisableEv) == true then unit else invoke(swe, "allout", [], [])
+  strict inv3 = invoke(swe, "bGrid", [], [])
+  strict claim = invoke(iv, "claim", [], [])
+  strict stake = invoke(iv, "stakeUnstake", [true, 0], [])
+  [
+  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  IntegerEntry(keyInvokeNext, 1)
+  ]
+}  
+
+@Callable(i)
+func invokerRead() = 
+{
+    let currentTodaysTimestamp = lastBlock.timestamp % 86400000
+    let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
+    let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
+    let timing3 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50821000 && tryGetInteger(this, keyInvokeNext) == 3 then true else false
+    let timing4 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50941000 && tryGetInteger(this, keyInvokeNext) == 4 then true else false 
+    [
+    BooleanEntry("invokerBurn1", timing1),
+    BooleanEntry("invokerBurn2", timing2),
+    BooleanEntry("invokerBurn3", timing3),
+    BooleanEntry("invokerBurn4", timing4)
+    ]
+}
+
+@Callable(i)
+func disableEv(disable:Boolean) = 
+if i.caller != this then throw("no") else
+{
+  [BooleanEntry(keyDisableEv, disable)]
+}
