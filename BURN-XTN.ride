@@ -25,6 +25,7 @@ let swopPUZZLExtn = Address(base58'3PBHyEwmERR1CEkrTNbPj2bgyisTfPRqfee')
 let swopBoost = Address(base58'3PQZWxShKGRgBN1qoJw6B4s9YWS9FneZTPg')
 let swopStaking = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+let vvxtnlpXTNamm = Address(base58'3P9UJxhsqj1UkqPDtM16yi9aGE26V5tdH6i')
 
 let d6 = 1000000
 let d8 = 100000000
@@ -137,15 +138,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func invoke2() =
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict withdrawSWAVES = if assetBalance(this, sW) > 0 then invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))]) else unit
-  strict lpWavesXtn = 
-    if assetBalance(this, xtnId) > 3 * tryGetInteger(this, keyBurnAmount) 
-    && wavesBalance(this).available > d8 then
-    invoke(swopWAVESxtn, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId) - 3 * tryGetInteger(this, keyBurnAmount))])
-    else unit
-  strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
-
-  strict inv = if (assetBalance(this, puzzle) > 0) then
+  strict getPZ = if (assetBalance(this, puzzle) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
   strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
     invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
@@ -168,7 +161,14 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func invoke3() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict burn = invoke(invoker, "burnXTN", [], [])
+  strict withdrawSWAVES = if assetBalance(this, sW) > 0 then invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))]) else unit
+  strict lpWavesXtn = 
+    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < 750000) && (assetBalance(this, xtnId) > 0)
+    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    else if (assetBalance(this, xtnId) > 0) && (wavesBalance(this).available > d8) 
+    then invoke(swopWAVESxtn, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId))])
+    else unit
+  strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
   strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', swapAmount(wxId)) else unit
   strict stats = invoke(this, "projectStats", [], [])
   []
@@ -179,7 +179,6 @@ func burnAmount(amount:Int) =
 if (i.caller != this) then throw("access only by project owner") else
 if amount > getIntegerValue(keyMaxBurn) then throw(keyMaxBurn) else 
 {[IntegerEntry(keyBurnAmount, amount * d6 / 7)]}
-#{[IntegerEntry(keyBurnAmount, amount)]} # test
 
 @Callable(i)
 func maxAmount(maxBurnInput:Int, maxSwap:Int) =
@@ -188,8 +187,6 @@ if (i.caller != this) then throw("access only by project owner") else
   [
   IntegerEntry(keyMaxBurn, maxBurnInput),
   IntegerEntry(keyMaxSwap, maxSwap * d8)
-#  IntegerEntry(keyMaxBurn, maxBurn), # test
-#  IntegerEntry(keyMaxSwap, maxSwap) # test
   ]
 }
 
@@ -197,10 +194,8 @@ if (i.caller != this) then throw("access only by project owner") else
 func stakeBoostSwopFarming() =
 if (i.caller != this) then throw("access only by project owner") else 
 {
-  strict stakeSwopFarming = if getIntegerValue(swopStaking, (toString(this) + "_user_available_for_claim")) > 0 
-    then invoke(swopFarm, "claimAllAndStake", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG"]], []) else unit
+  strict stakeSwopFarming = invoke(swopFarm, "claimAllAndStake", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG"]], [])
   let amount = getIntegerValue(swopGov, (toString(this) + "_GSwop_amount"))
-  #getIntegerValue(swopBoost, "3PAucbbumdUXmhzcR421zGiayphEdo2tRoz_3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_user_vote_gSWOP")
   strict boost = invoke(swopBoost, "votePoolWeight", ["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG", amount], [])
   []
 }
