@@ -38,7 +38,6 @@ let burn =
   #Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') 
   Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
 let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-let swe = Address(base58'3PCxF4JryswYYp9mpUtE725wjTgvpBmp3M9')
 let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
 let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
 let iv = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
@@ -48,11 +47,11 @@ let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 func invoker() = 
 {
   strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
-  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 50) 
+  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 150 * d6) 
     then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
     else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
-  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
   strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
+  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
   []
 }
 
@@ -107,9 +106,7 @@ if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") els
 @Callable(i)
 func botAddress(address:String) =
 if i.caller != this then throw("no") else
-{
-    [StringEntry(keyBotAddress, address)]
-}
+{[StringEntry(keyBotAddress, address)]}
 
 @Callable(i)
 func changeIntegerEntry(keyString:String, integer:Int) = 
@@ -137,67 +134,32 @@ if (i.caller != this && i.caller != burn) then throw("access only by project own
 
 @Callable(i)
 func invokerBurn1() = 
-if 
-i.caller != bot && 
-i.caller != s then throw("no") else
+if i.caller != bot then throw("no") else
 if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
 {
-  strict inv1 = reentrantInvoke(burn, "invoke1", [], [])
+  strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
+  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 2)
   ]
-}
+}  
 
 @Callable(i)
 func invokerBurn2() = 
-if 
-i.caller != bot && 
-i.caller != s then throw("no") else
+if i.caller != bot then throw("no") else
 if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
-  strict inv1 = reentrantInvoke(burn, "invoke2", [], [])
-  [
-  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
-  IntegerEntry(keyInvokeNext, 3)
-  ]
-}    
-
-@Callable(i)
-func invokerBurn3() = 
-if 
-i.caller != bot && 
-i.caller != s then throw("no") else
-if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
-if lastBlock.timestamp % 86400000 > 50821000 then throw("too late") else
-if tryGetInteger(this, keyInvokeNext) != 3 then throw("invoke other invokerBurn first") else
-{
-  strict inv1 = reentrantInvoke(burn, "invoke3", [], [])
-  strict inv3 = invoke(swe, "sGrid", [], [])
   strict swap = invoke(whi, "swap", [], [])
-  strict stake = invoke(whi, "stakeUnstake", [true, 0], [])
-  [
-  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
-  IntegerEntry(keyInvokeNext, 4)
-  ]
-} 
-
-@Callable(i)
-func invokerBurn4() = 
-if 
-i.caller != bot && 
-i.caller != s then throw("no") else
-if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
-if lastBlock.timestamp % 86400000 > 50941000 then throw("too late") else
-if tryGetInteger(this, keyInvokeNext) != 4 then throw("invoke other invokerBurn first") else
-{
-  strict inv3 = invoke(swe, "bGrid", [], [])
+  strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   strict claim = invoke(iv, "claim", [], [])
-  strict stake = invoke(iv, "stakeUnstake", [true, 0], [])
+  strict stakeI = invoke(iv, "stakeUnstake", [true, 0], [])
+  strict burn3 = invoke(burn, "invoke3", [], [])
+  strict burn4 = invoke(this, "burnXTN", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 1)
@@ -210,12 +172,38 @@ func invokerRead() =
     let currentTodaysTimestamp = lastBlock.timestamp % 86400000
     let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
     let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
-    let timing3 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50821000 && tryGetInteger(this, keyInvokeNext) == 3 then true else false
-    let timing4 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50941000 && tryGetInteger(this, keyInvokeNext) == 4 then true else false 
     [
     BooleanEntry("invokerBurn1", timing1),
-    BooleanEntry("invokerBurn2", timing2),
-    BooleanEntry("invokerBurn3", timing3),
-    BooleanEntry("invokerBurn4", timing4)
+    BooleanEntry("invokerBurn2", timing2)
     ]
+}  
+
+@Callable(i)
+func invokerBurn1t() = 
+if i.caller != s then throw("no") else
+if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
+{
+  strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
+  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  [
+  ScriptTransfer(bot, d6, unit),
+  IntegerEntry(keyInvokeNext, 2)
+  ]
+}  
+
+@Callable(i)
+func invokerBurn2t() = 
+if i.caller != s then throw("no") else
+if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
+{
+  strict swap = invoke(whi, "swap", [], [])
+  strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
+  strict claim = invoke(iv, "claim", [], [])
+  strict stakeI = invoke(iv, "stakeUnstake", [true, 0], [])
+  strict burn3 = invoke(burn, "invoke3", [], [])
+  strict burn4 = invoke(this, "burnXTN", [], [])
+  [
+  ScriptTransfer(bot, d6, unit),
+  IntegerEntry(keyInvokeNext, 1)
+  ]
 }
