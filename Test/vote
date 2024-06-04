@@ -1,0 +1,48 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let burnxtnpoolId = base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'
+let burnxpptpoolId = base58'3PQHndCUVrv3wBuQjbvVP9SnGmfbfitGxfx' # = BURN-XTN x PepeTeam
+let whirlpoolpoolId = base58'3P2myTbd5zpEHcYmNpdWTp5gXS5B8tL1RCY'
+let burnxtnswavesId = base58'3PK4ZxDsRB8pNSuiYbco9K8BchqnhhKwYsq'
+
+let PZ_burnxtn_id = base58'GdrDHazRGcCYeCgDEZzLpsZ3E7jmrxYB7EDUiGfiVAr1'
+let PZ_burnxtnppt_id = base58'2r5xCUHFLQVHKNC5k6qqRnDTT485KvKwAtbNtM2Wy4wW'
+let PZ_whirlpool_id = base58'4ogHLDYJevjxU1XAQjynbKNE1rYrFvLdET2gDLnA9TiL'
+let PZ_burnxtnswaves_id = base58'HXbKm7u7B4U2WEeK4L9pmUsP2ToypATt9vsafssAEMQG'
+
+let wavesdaoaddress = Address(base58'3PEwRcYNAUtoFvKpBhKoiwajnZfdoDR6h4h')
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+
+@Callable(i)
+func burnxtn1() = 
+if (i.caller != this) then throw("access only by project owner") else
+{strict stakeIndexFor = invoke(Address(burnxtnpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtn_id, 1)])
+[]}
+
+@Callable(i)
+func burnxtnxppt1() = 
+if (i.caller != this) then throw("access only by project owner") else
+{strict stakeIndexFor = invoke(Address(burnxpptpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnppt_id, 1)])
+[]}   
+
+@Callable(i)
+func burnxtnswaves1() = 
+if (i.caller != this) then throw("access only by project owner") else
+{strict stakeIndexFor = invoke(Address(burnxtnswavesId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_burnxtnswaves_id, 1)])
+[]}   
+
+@Callable(i)
+func whirlpool1() = 
+if (i.caller != this) then throw("access only by project owner") else
+{strict stakeIndexFor = invoke(Address(whirlpoolpoolId), "stakeIndexFor", [toString(wavesdaoaddress)], [AttachedPayment(PZ_whirlpool_id, 1)])
+[]}
+
+@Callable(i)
+func withdraw() = {
+  strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+  [ScriptTransfer(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), assetBalance(this, xtnId), xtnId)]
+}
