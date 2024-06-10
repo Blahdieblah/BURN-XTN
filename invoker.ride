@@ -25,6 +25,8 @@ let keyBotAddress = "bot address string"
 let keyBurnAmount = "burn amount"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
 let keyDisableEv = "disable Ev"
+let keyMinImportAmountBurn = "minimum import amount burn"
+let keyMinImportAmountWdaosc = "minimum import amount wdaosc"
 
 let d6 = 1000000
 let d8 = 100000000
@@ -41,18 +43,37 @@ let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
 let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
 let iv = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
+let wdaosc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
+
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
 @Callable(i)
 func invoker() = 
+if i.caller != Address(base58'3PQ23xgnf98t4qDtF5bscxdCDwgYoL7SPeK') && i.caller != Address(base58'3PDcEeHZcvhExJE4CsN2XSSWtPSwNDKWBh5') then throw("no") else
 {
-  strict inv1 = invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "withdraw", [], [])
-  strict inv2 = if (assetBalance(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), vvxtnlp) < 150 * d6) 
-    then invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "withdraw", [], []) 
-    else invoke(Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz'), "importVVXTNLP", [], [])
-  strict inv4 = invoke(Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc'), "withdraw", [], [])
-  strict inv3 = invoke(Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3'), "withdraw", [], [])
+  strict inv1 = invoke(burn, "withdraw", [], [])
+  strict inv2 = if (assetBalance(burn, vvxtnlp) < getIntegerValue(this, keyMinImportAmountBurn) * d6) 
+    then invoke(whi, "withdraw", [], []) 
+    else invoke(burn, "importVVXTNLP", [], [])
+  strict inv4 = invoke(wdaosc, "withdraw", [], [])
+  strict inv3 = if (assetBalance(wdaosc, vvxtnlp) < getIntegerValue(this, keyMinImportAmountWdaosc) * d6) 
+    then invoke(iv, "withdraw", [], [])
+    else invoke(wdaosc, "importVVXTNLP", [], [])
   []
+}
+
+@Callable(i)
+func setAmountBurn(amount:Int) = 
+if i.caller != s && i.caller != this then throw("no") else
+{
+  [IntegerEntry(keyMinImportAmountBurn, amount)]
+}
+
+@Callable(i)
+func setAmountWdaosc(amount:Int) = 
+if i.caller != s && i.caller != this then throw("no") else
+{
+  [IntegerEntry(keyMinImportAmountWdaosc, amount)]
 }
 
 @Callable(i)
@@ -157,7 +178,6 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   strict claim = invoke(iv, "claim", [], [])
-  strict stakeI = invoke(iv, "stakeUnstake", [true, 0], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
@@ -199,7 +219,6 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   strict claim = invoke(iv, "claim", [], [])
-  strict stakeI = invoke(iv, "stakeUnstake", [true, 0], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
