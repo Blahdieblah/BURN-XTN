@@ -162,6 +162,7 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -177,7 +178,8 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 {
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  strict claim = invoke(iv, "claim", [], [])
+  strict lp = invoke(iv, "lpWavesXtn", [], [])
+  strict swap2 = invoke(iv, "swap", [], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
@@ -205,6 +207,7 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -218,7 +221,8 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 {
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  strict claim = invoke(iv, "claim", [], [])
+  strict lp = invoke(iv, "lpWavesXtn", [], [])
+  strict swap2 = invoke(iv, "swap", [], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
