@@ -162,7 +162,7 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
-  strict unstake = invoke(iv, "unstake", [], [])
+  #strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -178,7 +178,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 {
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  strict lp = invoke(iv, "lpWavesXtn", [], [])
+  #strict lp = invoke(iv, "lpWavesXtn", [], [])
   strict swap2 = invoke(iv, "swap", [], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
@@ -203,11 +203,11 @@ func invokerRead() =
 @Callable(i)
 func invokerBurn1t() = 
 if i.caller != s then throw("no") else
-if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
+if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2 first") else
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
-  strict unstake = invoke(iv, "unstake", [], [])
+  #strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -217,11 +217,11 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 @Callable(i)
 func invokerBurn2t() = 
 if i.caller != s then throw("no") else
-if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
+if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1 first") else
 {
   strict swap = invoke(whi, "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  strict lp = invoke(iv, "lpWavesXtn", [], [])
+  #strict lp = invoke(iv, "lpWavesXtn", [], [])
   strict swap2 = invoke(iv, "swap", [], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
