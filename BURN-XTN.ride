@@ -25,6 +25,7 @@ let swopPUZZLExtn = Address(base58'3PBHyEwmERR1CEkrTNbPj2bgyisTfPRqfee')
 let swopBoost = Address(base58'3PQZWxShKGRgBN1qoJw6B4s9YWS9FneZTPg')
 let swopStaking = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
 let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
 let vvxtnlpXTNamm = Address(base58'3P9UJxhsqj1UkqPDtM16yi9aGE26V5tdH6i')
 
 let d6 = 1000000
@@ -161,12 +162,13 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func invoke3() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict withdrawSWAVES = if assetBalance(this, sW) > 0 then invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))]) else unit
+  #strict withdrawSWAVES = if assetBalance(this, sW) > 0 then invoke(sWsc, "withdraw", [], [AttachedPayment(sW, assetBalance(this, sW))]) else unit
   strict lpWavesXtn = 
-    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < 750000) && (assetBalance(this, xtnId) > 0)
+    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < 750000) && (assetBalance(this, xtnId) > d6)
     then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
-    else if (assetBalance(this, xtnId) > 0) && (wavesBalance(this).available > d8) 
-    then invoke(swopWAVESxtn, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId))])
+    else if (assetBalance(this, xtnId) > d6) #&& (wavesBalance(this).available > 2 * d8) 
+    #then invoke(swopWAVESxtn, "callFunction", ["replenishWithTwoTokens", ["true", "0"]], [AttachedPayment(unit, wavesBalance(this).regular - d8), AttachedPayment(xtnId, assetBalance(this, xtnId))])
+    then invoke(swopWAVESxtn, "callFunction", ["replenishWithOneToken", ["1", "true", "0"]], [AttachedPayment(xtnId, swapAmount(xtnId))])
     else unit
   strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
   strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', swapAmount(wxId)) else unit
@@ -176,7 +178,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 
 @Callable(i)
 func burnAmount(amount:Int) =
-if (i.caller != this) then throw("access only by project owner") else
+if (i.caller != this) && (i.caller != s) then throw("access only by project owner") else
 if amount > getIntegerValue(keyMaxBurn) then throw(keyMaxBurn) else 
 {[IntegerEntry(keyBurnAmount, amount * d6 / 7)]}
 
