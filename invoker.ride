@@ -21,6 +21,7 @@ let keyInvokeNext = "invoke next"
 let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
 let keyBotAddress = "bot address string"
+let keyActivated3 = "Activated 3 blockheight"
 
 let keyBurnAmount = "burn amount"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
@@ -111,7 +112,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated)
 if tryGetInteger(bbb, keyInvokeNext) == 2 then throw("invoke BBB2any first") else
   {
     strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
-    [ScriptTransfer(bot, d6, unit)]
+    [ScriptTransfer(i.caller, d6, unit)]
   }
 
 @Callable(i)
@@ -121,7 +122,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2
 if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") else
   {
     strict inv = invoke(bbb, "distribute", [], [])
-    [ScriptTransfer(bot, d6, unit)]
+    [ScriptTransfer(i.caller, d6, unit)]
   }
 
 @Callable(i)
@@ -189,14 +190,35 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 }  
 
 @Callable(i)
+func invokerBurn3() = 
+if i.caller != bot then throw("no") else
+if getIntegerValue(burn, keyActivated3) + 7 * 1440 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+{
+  strict burn4 = invoke(burn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
+func invokerBurn3any() = 
+if getIntegerValue(burn, keyActivated3) + 7 * 1440 + 2 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+{
+  strict burn4 = invoke(burn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
 func invokerRead() = 
 {
-    let currentTodaysTimestamp = lastBlock.timestamp % 86400000
-    let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
-    let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
+  let currentTodaysTimestamp = lastBlock.timestamp % 86400000
+  let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
+  let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
+  let timing3 = if getIntegerValue(burn, keyActivated3) + 7 * 1440 >= height then true else false
     [
     BooleanEntry("invokerBurn1", timing1),
-    BooleanEntry("invokerBurn2", timing2)
+    BooleanEntry("invokerBurn2", timing2),
+    BooleanEntry("invokerBurn3", timing3)
     ]
 }  
 
@@ -229,4 +251,14 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 1)
   ]
+}
+
+@Callable(i)
+func invokerBurn3t() = 
+if i.caller != s then throw("no") else
+if getIntegerValue(burn, keyActivated3) + 7 * 1440 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+{
+  strict burn4 = invoke(burn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
 }
