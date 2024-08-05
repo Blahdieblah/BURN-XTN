@@ -66,6 +66,7 @@ let usdtppt = base58'G5WWWzzVsWRyzGf32xojbnfp7gXbWrgqJT8RcVWEfLmC'
 let sW = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
 let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
 let windLP = base58'6TXFMpr6rG4tr2CuPmVRq1NsjgPLJ59s2VMVnL1ZLtpR'
+let wxWindWavesLP = base58'2dQqyqwo8S26kVUnFAe5LqHgNtU8FYG8vvZkrEzLEkiv'
 
 # calculate value of sWAVES to WAVES
 let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
@@ -190,8 +191,8 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 }
 
 @Callable(i)
-func lpWindWaves() = 
-if (i.caller != this) then throw("access only by project owner") else 
+func invoke4() = 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   #strict claimWX = invoke(wxClaim, "claimWxDoNotThrow", [windLPassetId], [])
   strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', fraction(swapAmount(wxId), 60, 100)) else unit
@@ -201,7 +202,8 @@ if (i.caller != this) then throw("access only by project owner") else
 
   let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
   let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
-  strict lpWindWaves = invoke(wxLPwind, "put", [500000, true], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
+  strict lpWindWaves = invoke(wxLPwind, "put", [500000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
+  strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
   [IntegerEntry(keyActivated3, height)]
 }
 
