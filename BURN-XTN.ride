@@ -199,7 +199,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   strict getPZ = if (assetBalance(this, wxId) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolWind)], [AttachedPayment(wxId, swapAmount(wxId))]) else unit
 
-  let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
+  let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
   let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
   strict lpWindWaves = invoke(wxLPwind, "put", [500000, true], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
   [IntegerEntry(keyActivated3, height)]
