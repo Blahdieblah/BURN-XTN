@@ -202,7 +202,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 
   let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
   let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
-  strict lpWindWaves = invoke(wxLPwind, "put", [500000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
+  strict lpWindWaves = invoke(wxLPwind, "put", [1000000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
   strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
   [IntegerEntry(keyActivated3, height)]
 }
