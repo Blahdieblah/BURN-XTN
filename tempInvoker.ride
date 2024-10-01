@@ -1,0 +1,146 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let keyInvokeNext = "invoke next"
+let keyActivated = "Activated blockheight"
+let keyActivated2 = "Activated 2 blockheight"
+let keyBotAddress = "bot address string"
+let keyActivated3 = "Activated 3 blockheight"
+
+let keyBurnAmount = "burn amount"
+let keyBurnxtnAmount = "burn BURN-XTN amount"
+let keyMinImportAmountBurn = "minimum import amount burn"
+
+let d6 = 1000000
+let d8 = 100000000
+
+let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+
+let burn = Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H') 
+let bbb = Address(base58'3PQrvbs3jtXJHkfYcKHefUzbdhpg4b8knP2')
+let whi = Address(base58'3PGJzyiSxY7Xn1D9hk4wdJ6EKEjPEszf56d')
+let cold = Address(base58'3PABPXfCC8dA9idk6NQPVkg9vd7v3QzEXwz')
+let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
+
+let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
+
+let keyVestedUSDN = toString(burn) + "_USDN"
+
+@Callable(i)
+func invoker() = 
+if i.caller != Address(base58'3PQ23xgnf98t4qDtF5bscxdCDwgYoL7SPeK') && i.caller != Address(base58'3PDcEeHZcvhExJE4CsN2XSSWtPSwNDKWBh5') then throw("no") else
+{
+  strict inv1 = if (getIntegerValue(Vvested, keyVestedUSDN) > 0) 
+    then invoke(burn, "withdraw", [], []) 
+    else unit
+  strict inv2 = if (assetBalance(burn, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
+    then invoke(burn, "importVVXTNLP", [], [])
+    else unit
+  []
+}
+
+@Callable(i)
+func setAmountBurn(amount:Int) = 
+if i.caller != this then throw("no") else
+{
+  [
+  IntegerEntry(keyMinImportAmountBurn, amount),
+  IntegerEntry("total XTN in vesting BURN-XTN", getIntegerValue(Vvested, keyVestedUSDN))
+  ]
+}
+
+@Callable(i)
+func invokerBBB() = 
+if i.caller != bot then throw("no") else
+{
+  strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
+  []
+}
+
+@Callable(i)
+func BBB1() = 
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440)) else
+{
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
+func BBB2() = 
+if i.caller != this then throw("no") else
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+  {
+    strict inv = invoke(bbb, "distribute", [], [])
+    [ScriptTransfer(bot, d6, unit)]
+  }
+
+@Callable(i)
+func BBB1any() = 
+if getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 2 then throw("invoke BBB2any first") else
+  {
+    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
+    [ScriptTransfer(i.caller, d6, unit)]
+  }
+
+@Callable(i)
+func BBB2any() = 
+if getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2)) else
+if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") else
+  {
+    strict inv = invoke(bbb, "distribute", [], [])
+    [ScriptTransfer(i.caller, d6, unit)]
+  }
+
+@Callable(i)
+func botAddress(address:String) =
+if i.caller != this then throw("no") else
+{[StringEntry(keyBotAddress, address)]}
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
+
+@Callable(i)
+func burnXTN() = 
+if (i.caller != this && i.caller != burn) then throw("access only by project owner") else 
+{
+  let xtnBurnAmount = assetBalance(this, xtnId)
+  let xtnBurn = Burn(xtnId, xtnBurnAmount)  
+  let surfBurnAmount = assetBalance(this, surfId)
+  let surfBurn = Burn(surfId, surfBurnAmount)
+  let burnxtnBurnAmount = assetBalance(this, burnxtnId)
+  let burnxtnBurn = Burn(burnxtnId, burnxtnBurnAmount)
+    [
+    xtnBurn,
+    surfBurn,
+    burnxtnBurn,
+    IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnBurnAmount),
+    IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
+    ]
+}
