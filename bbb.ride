@@ -24,7 +24,7 @@ let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
 let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
 let puzzleMarket = Address(base58'3PATXDVE53rKJtkwXYV3tvuLVS2fDtGtKCc')
-let invoker = Address(base58'3P4AdC9J6MzTEi2LL9xgQN8EimMnbk4d6Nt')
+let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let waves = base58'WAVES'
@@ -58,6 +58,7 @@ let keyTotalWavesPaid = "Total WAVES paid"
 let keyTotalPuzzlePaid = "Total PUZZLE paid"
 let keyRomeBalance = "ROME balance"
 let keyInvokeNext = "invoke next"
+let keyTradeMode = "trade mode"
 
 let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
 let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
@@ -89,17 +90,23 @@ func claimInvestPuzzle()=
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
     strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
-    strict inv = if (assetBalance(this, puzzle) > 0) then
+    strict inv = 
+      if (getBooleanValue(this, keyTradeMode) == true) then
+      invoke(Address(poolBBB), "claimIndexRewards", [], []) else
+      if (assetBalance(this, puzzle) > 0) then
       invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
+
     strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
       invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
     [
     IntegerEntry("Activated blockheight", height),
     IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
-    IntegerEntry(keyRomeAmount, assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
+    IntegerEntry(keyRomeAmount, if (getBooleanValue(this, keyTradeMode) == true) then 0 else
+      assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
     IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
     IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool)),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
+    IntegerEntry(keyInvokeNext, 2),
     IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
     IntegerEntry("puzzle staked", puzzleStaked),
     IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
@@ -202,22 +209,35 @@ if (i.caller != this) then throw("access only by project owner") else
 }
 
 @Callable(i)
-func register()=
+func register() =
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
 if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
 {[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]}
 
 @Callable(i)
-func setRomeBalance(amount:Int)= 
+func registerManually (address:String) =
+if (i.caller != this) then throw("access only by project owner") else
+if (contains(tryGetString(this, keyAddressesRegistered), address)) then throw("already registered") else
+{[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + address + ","))]}
+
+@Callable(i)
+func setRomeBalance(amount:Int) = 
 if (i.caller != this) then throw("access only by project owner") else
     {[IntegerEntry(keyRomeBalance, amount * d6)]}
 
 @Callable(i)
-func deleteEntry()= 
+func deleteEntry() = 
 if (i.caller != this) then throw("access only by project owner") else
     {[DeleteEntry(keyAddressesRegistered)]}
 
 @Callable(i)
-func changeIntegerEntry(keyString:String, integer:Int)= 
+func changeIntegerEntry(keyString:String, integer:Int) = 
 if (i.caller != this) then throw("access only by project owner") else
     {[IntegerEntry(keyString, integer)]}
+
+@Callable(i)
+func setTradeMode(tradeMode:Boolean) =
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [BooleanEntry(keyTradeMode, tradeMode)]
+}
