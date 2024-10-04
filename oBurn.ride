@@ -1,0 +1,80 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let keyMaxSwap = "max amount swap"
+
+let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
+let wxClaim = Address(base58'3PPNhHYkkEy13gRWDCaruQyhNbX2GrjYSyV')
+let wxLPwind = Address(base58'3PEtzvd7onMdQ3RiQLhkE8we5jSWxzcZ6UM')
+
+let windLPassetId = "2dQqyqwo8S26kVUnFAe5LqHgNtU8FYG8vvZkrEzLEkiv"
+
+let d6 = 1000000
+let d8 = 100000000
+
+let poolWind = base58'3P37uv8V2CMNMtKtwRRNnYPjNqPdGGszytW'
+let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
+
+let wavesId = base58'WAVES'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let windLP = base58'6TXFMpr6rG4tr2CuPmVRq1NsjgPLJ59s2VMVnL1ZLtpR'
+let wxWindWavesLP = base58'2dQqyqwo8S26kVUnFAe5LqHgNtU8FYG8vvZkrEzLEkiv'
+
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let WX_WAVES_USD = Address(base58'3PKfrupEydU2nZAghVjZAfvCwMBkzuR1F52')
+    let WX_WIND_WAVES = wxLPwind
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+    let baseAmount2 = toInt(fraction(toBigInt(assetBalance(WX_WAVES_USD, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+    let baseAmount3 = toInt(fraction(toBigInt(assetBalance(WX_WIND_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX3 = wavesBalance(WX_WIND_WAVES).regular + baseAmount3
+let windInWX3 = assetBalance(wxLPwind, windLP)
+let windwavesprice = fraction(d8, wavesInWX3, windInWX3)
+
+func swapWX (assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
+  {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
+
+func swapAmount (assetid:ByteVector) = 
+{if assetBalance(this, assetid) > getIntegerValue(keyMaxSwap) then getIntegerValue(keyMaxSwap) else assetBalance(this, assetid)}
+
+@Callable(i)
+func invoke4 () = 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
+{
+  strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', fraction(swapAmount(wxId), 60, 100)) else unit
+  strict getPZ = if (assetBalance(this, wxId) > 0) then
+    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolWind)], [AttachedPayment(wxId, swapAmount(wxId))]) else unit
+
+  let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
+  let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
+  strict lpWindWaves = invoke(wxLPwind, "put", [1000000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
+  strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
+  [
+  IntegerEntry("Activated 3 blockheight", height),
+  ScriptTransfer(Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H'), wavesBalance(this).regular - d8, unit)
+  ]
+}
