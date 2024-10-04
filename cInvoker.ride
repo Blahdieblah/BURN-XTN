@@ -25,9 +25,7 @@ let keyActivated3 = "Activated 3 blockheight"
 
 let keyBurnAmount = "burn amount"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
-let keyDisableEv = "disable Ev"
 let keyMinImportAmountBurn = "minimum import amount burn"
-let keyMinImportAmountWdaosc = "minimum import amount wdaosc"
 
 let d6 = 1000000
 let d8 = 100000000
@@ -37,44 +35,38 @@ let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 
-let burn = 
-  #Address(base58'3PCBL2vbjAVFbiCwmGsPmT6QdATutQnM8ov') 
-  Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz') 
-let bbb = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
-let whi = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
-let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
-let iv = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
-let wdaosc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
+let oBurn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
+let burn = Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H') 
+let bbb = Address(base58'3PQrvbs3jtXJHkfYcKHefUzbdhpg4b8knP2')
+let whi = Address(base58'3PGJzyiSxY7Xn1D9hk4wdJ6EKEjPEszf56d')
+let cold = Address(base58'3PABPXfCC8dA9idk6NQPVkg9vd7v3QzEXwz')
+let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
 
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
+
+let keyVestedUSDN = toString(burn) + "_USDN"
 
 @Callable(i)
 func invoker() = 
 if i.caller != Address(base58'3PQ23xgnf98t4qDtF5bscxdCDwgYoL7SPeK') && i.caller != Address(base58'3PDcEeHZcvhExJE4CsN2XSSWtPSwNDKWBh5') then throw("no") else
 {
-  strict inv1 = invoke(burn, "withdraw", [], [])
-  strict inv2 = if (assetBalance(burn, vvxtnlp) < getIntegerValue(this, keyMinImportAmountBurn) * d6) 
-    then invoke(whi, "withdraw", [], []) 
-    else invoke(burn, "importVVXTNLP", [], [])
-  strict inv4 = invoke(wdaosc, "withdraw", [], [])
-  strict inv3 = if (assetBalance(wdaosc, vvxtnlp) < getIntegerValue(this, keyMinImportAmountWdaosc) * d6) 
-    then invoke(iv, "withdraw", [], [])
-    else invoke(wdaosc, "importVVXTNLP", [], [])
+  strict inv1 = if (getIntegerValue(Vvested, keyVestedUSDN) > 0) 
+    then invoke(burn, "withdraw", [], []) 
+    else unit
+  strict inv2 = if (assetBalance(burn, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
+    then invoke(burn, "importVVXTNLP", [], [])
+    else unit
   []
 }
 
 @Callable(i)
 func setAmountBurn(amount:Int) = 
-if i.caller != s && i.caller != this then throw("no") else
+if i.caller != this then throw("no") else
 {
-  [IntegerEntry(keyMinImportAmountBurn, amount)]
-}
-
-@Callable(i)
-func setAmountWdaosc(amount:Int) = 
-if i.caller != s && i.caller != this then throw("no") else
-{
-  [IntegerEntry(keyMinImportAmountWdaosc, amount)]
+  [
+  IntegerEntry(keyMinImportAmountBurn, amount),
+  IntegerEntry("total XTN in vesting BURN-XTN", getIntegerValue(Vvested, keyVestedUSDN))
+  ]
 }
 
 @Callable(i)
@@ -163,7 +155,6 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
-  #strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -177,11 +168,10 @@ if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
-  strict swap = invoke(whi, "swap", [], [])
+  #strict swap = invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  #strict lp = invoke(iv, "lpWavesXtn", [], [])
-  strict swap2 = invoke(iv, "swap", [], [])
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  strict stakeW2 = invoke(cold, "stakeUnstake", [true, 0], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
@@ -190,27 +180,45 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 }  
 
 @Callable(i)
+func invokerBurn3() = 
+if i.caller != bot then throw("no") else
+if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+{
+  strict burn4 = invoke(oBurn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
+func invokerBurn3any() = 
+if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 + 2 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+{
+  strict burn4 = invoke(oBurn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
+}
+
+@Callable(i)
 func invokerRead() = 
 {
   let currentTodaysTimestamp = lastBlock.timestamp % 86400000
   let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
   let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
-  #let timing3 = if getIntegerValue(burn, keyActivated3) + 7 * 1440 <= height then true else false
+  let timing3 = if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 <= height then true else false
     [
     BooleanEntry("invokerBurn1", timing1),
-    BooleanEntry("invokerBurn2", timing2)
-    #,BooleanEntry("invokerBurn3", timing3)
+    BooleanEntry("invokerBurn2", timing2),
+    BooleanEntry("invokerBurn3", timing3)
     ]
 }  
 
 @Callable(i)
 func invokerBurn1t() = 
-if i.caller != s then throw("no") else
+if i.caller != this then throw("no") else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2 first") else
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
-  #strict unstake = invoke(iv, "unstake", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -219,17 +227,26 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2
 
 @Callable(i)
 func invokerBurn2t() = 
-if i.caller != s then throw("no") else
+if i.caller != this then throw("no") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1 first") else
 {
-  strict swap = invoke(whi, "swap", [], [])
+  #strict swap = invoke(Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr'), "swap", [], [])
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  #strict lp = invoke(iv, "lpWavesXtn", [], [])
-  strict swap2 = invoke(iv, "swap", [], [])
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  strict stakeW2 = invoke(cold, "stakeUnstake", [true, 0], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 1)
   ]
+}
+
+@Callable(i)
+func invokerBurn3t() = 
+if i.caller != this then throw("no") else
+if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
+then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+{
+  strict burn4 = invoke(oBurn, "invoke4", [], [])
+  [ScriptTransfer(bot, d6, unit)]
 }
