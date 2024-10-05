@@ -183,7 +183,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 func invokerBurn3() = 
 if i.caller != bot then throw("no") else
 if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
-then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   [ScriptTransfer(bot, d6, unit)]
@@ -192,7 +192,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2
 @Callable(i)
 func invokerBurn3any() = 
 if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 + 2 >= height 
-then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
+then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440 + 2)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   [ScriptTransfer(bot, d6, unit)]
@@ -245,7 +245,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
 func invokerBurn3t() = 
 if i.caller != this then throw("no") else
 if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
-then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
+then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   [ScriptTransfer(bot, d6, unit)]
