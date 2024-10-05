@@ -169,6 +169,7 @@ if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
+  strict swap = invoke(cold, "swapXTNtoWAVES", [], [])
   strict stakeW2 = invoke(cold, "stakeUnstake", [true, 0], [])
   strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
