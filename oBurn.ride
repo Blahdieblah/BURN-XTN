@@ -65,16 +65,20 @@ func swapAmount (assetid:ByteVector) =
 func invoke4 () = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', fraction(swapAmount(wxId), 60, 100)) else unit
-  strict getPZ = if (assetBalance(this, wxId) > 0) then
-    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolWind)], [AttachedPayment(wxId, swapAmount(wxId))]) else unit
+  strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', swapAmount(wxId)) else unit
+  #strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', fraction(swapAmount(wxId), 60, 100)) else unit
+  #strict getPZ = if (assetBalance(this, wxId) > 0) then
+   # invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolWind)], [AttachedPayment(wxId, swapAmount(wxId))]) else unit
 
-  let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
-  let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
-  strict lpWindWaves = invoke(wxLPwind, "put", [1000000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
-  strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
+  #let wavesAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then fraction(assetBalance(this, windLP), windwavesprice, d8) else fraction(fraction(d8, (wavesBalance(this).regular - d8), windwavesprice), windwavesprice, d8)
+  #let windAmount = if (wavesBalance(this).regular - d8) >= fraction(assetBalance(this, windLP), windwavesprice, d8) then assetBalance(this, windLP) else fraction(d8, (wavesBalance(this).regular - d8), windwavesprice)
+  #strict lpWindWaves = invoke(wxLPwind, "put", [1000000, false], [AttachedPayment(windLP, windAmount), AttachedPayment(unit, wavesAmount)])
+  #strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
   [
   IntegerEntry("Activated 3 blockheight", height),
-  ScriptTransfer(Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H'), wavesBalance(this).regular - d8, unit)
+  ScriptTransfer(Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H'), 
+    if (wavesBalance(this).available <= d8) then 0 else
+    wavesBalance(this).regular - d8, 
+    unit)
   ]
 }
