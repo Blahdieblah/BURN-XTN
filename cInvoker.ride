@@ -1,14 +1,6 @@
 {-# STDLIB_VERSION 6 #-}
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
-{-# IMPORT artifacts/mainnet.ride #-}
-
-func tryGetString (address:Address, key:String) = match getString(address, key) {
-    case b: String => 
-        b
-    case _ => 
-        ""
-}
 
 func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
     case b: Int => 
@@ -22,13 +14,9 @@ let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
 let keyBotAddress = "bot address string"
 let keyActivated3 = "Activated 3 blockheight"
-
-let keyBurnAmount = "burn amount"
-let keyBurnxtnAmount = "burn BURN-XTN amount"
 let keyMinImportAmountBurn = "minimum import amount burn"
 
 let d6 = 1000000
-let d8 = 100000000
 
 let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
