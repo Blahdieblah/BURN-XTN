@@ -28,9 +28,9 @@ let burn = Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H')
 let bbb = Address(base58'3PQrvbs3jtXJHkfYcKHefUzbdhpg4b8knP2')
 let whi = Address(base58'3PGJzyiSxY7Xn1D9hk4wdJ6EKEjPEszf56d')
 let cold = Address(base58'3PABPXfCC8dA9idk6NQPVkg9vd7v3QzEXwz')
-let wdaosc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
+let pzsc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
 let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
-let cProjects = Address(base58'3PQkJpoGEtzPFEt4goHFYfU321uCseWjTZu')
+#let cProjects = Address(base58'3PQkJpoGEtzPFEt4goHFYfU321uCseWjTZu')
 
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
@@ -46,9 +46,9 @@ if i.caller != Address(base58'3PQ23xgnf98t4qDtF5bscxdCDwgYoL7SPeK') && i.caller 
   strict inv1b = if (assetBalance(burn, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
     then invoke(burn, "importVVXTNLP", [], [])
     else unit
-  strict inv2a = invoke(wdaosc, "withdraw", [], []) 
-  strict inv2b = if (assetBalance(wdaosc, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
-    then invoke(wdaosc, "importVVXTNLP", [], [])
+  strict inv2a = invoke(pzsc, "withdraw", [], []) 
+  strict inv2b = if (assetBalance(pzsc, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
+    then invoke(pzsc, "importVVXTNLP", [], [])
     else unit
   []
 }
@@ -180,9 +180,9 @@ if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height
 then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
-  strict cP1 = invoke(cProjects, "burnWhirl1cProjects", [], [])
-  strict cP2 = invoke(cProjects, "whirlpool1cProjects", [], [])
-  strict cP3 = invoke(cProjects, "bbb1cProjects", [], [])
+  strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
+  strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
+  strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
   [ScriptTransfer(bot, d6, unit)]
 }
 
