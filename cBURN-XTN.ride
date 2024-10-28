@@ -198,8 +198,8 @@ if (i.caller != invoker) then throw("no access") else
     then invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
     else unit
   strict swapXtnVvxtnlp = 
-    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < getIntegerValue(keyMaxPrice)) && (assetBalance(this, xtnId) > 0)
-    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < getIntegerValue(keyMaxPrice)) && (assetBalance(this, xtnId) > 5 * tryGetInteger(this, keyBurnAmount))
+    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId) - 5 * tryGetInteger(this, keyBurnAmount))
     else unit
   []
 }
