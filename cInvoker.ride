@@ -165,8 +165,9 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   #strict swap = invoke(cold, "swapXTNtoWAVES", [], [])
   strict stakeW2 = invoke(cold, "stakeUnstake", [true, 0], [])
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
+  strict stats = invoke(burn, "projectStats", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 1)
@@ -230,8 +231,9 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   #strict swap = invoke(cold, "swapXTNtoWAVES", [], [])
   strict stakeW2 = invoke(cold, "stakeUnstake", [true, 0], [])
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
+  strict stats = invoke(burn, "projectStats", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 1)
