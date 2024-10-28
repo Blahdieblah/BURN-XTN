@@ -21,6 +21,7 @@ let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
 let vvxtnlpXTNamm = Address(base58'3P9UJxhsqj1UkqPDtM16yi9aGE26V5tdH6i')
+let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
 
 let d6 = 1000000
 let d8 = 100000000
@@ -86,14 +87,14 @@ func swapAmount(assetid:ByteVector) =
 func invoke1() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
-  strict claimInv = invoke(Address(poolSWAVES), "claimIndexRewards", [], [])
-  let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
+  #strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
+  #strict claimInv = invoke(Address(poolSWAVES), "claimIndexRewards", [], [])
+  #let burnxtnDifference = assetBalance(this, burnxtnId) - burnxtnBalanceBefore
 
   strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
   [
-  IntegerEntry(keyBurnxtnAmount, burnxtnDifference),
-  ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
+  #IntegerEntry(keyBurnxtnAmount, burnxtnDifference),
+  #ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
   IntegerEntry("Activated blockheight", height)
   ]
 }
@@ -116,7 +117,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   ]
 }
 
-@Callable(i)
+@Callable(i) # not invoked
 func invoke3() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
@@ -129,8 +130,6 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
     then invoke(swopWAVESxtn, "callFunction", ["replenishWithOneToken", ["1", "true", "0"]], [AttachedPayment(xtnId, swapAmount(xtnId))])
     else unit
   strict deposit = if wavesBalance(this).available > d8 then invoke(sWsc, "deposit", [], [AttachedPayment(unit, wavesBalance(this).available - d8)]) else unit
-
-  strict stats = invoke(this, "projectStats", [], [])
   []
 }
 
@@ -194,7 +193,14 @@ func projectStats() =
 func withdraw() = 
 if (i.caller != invoker) then throw("no access") else
 {
-  strict withdraw = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+  strict withdraw = 
+    if (getIntegerValue(Vvested, toString(this) + "_USDN") > 0) 
+    then invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
+    else unit
+  strict swapXtnVvxtnlp = 
+    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < getIntegerValue(keyMaxPrice)) && (assetBalance(this, xtnId) > 0)
+    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId))
+    else unit
   []
 }
 
