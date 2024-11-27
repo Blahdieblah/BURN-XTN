@@ -1,6 +1,8 @@
 {-# STDLIB_VERSION 6 #-}
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
 
 func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
     case b: Int => 
@@ -14,6 +16,7 @@ let keyBurnxtnAmount = "burn BURN-XTN amount"
 let keyMaxBurn = "max amount burn"
 let keyMaxSwap = "max amount swap"
 let keyMaxPrice = "max price VVXTNLP/XTN"
+let keyVestedUSDN = toString(this) + "_USDN"
 
 let sWsc = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
 let swopWAVESxtn = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
@@ -141,7 +144,7 @@ if amount > getIntegerValue(keyMaxBurn) then throw(keyMaxBurn) else
 
 @Callable(i)
 func maxAmount(maxBurnInput:Int, maxSwap:Int) =
-if (i.caller != this) then throw("access only by project owner") else 
+if (i.caller != this) && (i.caller != s) then throw("access only by project owner") else
 {
   [
   IntegerEntry(keyMaxBurn, maxBurnInput),
@@ -151,7 +154,7 @@ if (i.caller != this) then throw("access only by project owner") else
 
 @Callable(i)
 func maxPrice(VVXTNLP_XTN:Int) =
-if (i.caller != this) then throw("access only by project owner") else 
+if (i.caller != this) && (i.caller != s) then throw("access only by project owner") else
 {
   [IntegerEntry(keyMaxPrice, VVXTNLP_XTN)]
 }
@@ -185,7 +188,8 @@ func projectStats() =
   IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
     case asset:Asset =>
         asset.quantity / d8
-    case _ => throw("Can't find asset")})
+    case _ => throw("Can't find asset")}),
+  IntegerEntry("total XTN in vesting BURN-XTN", getIntegerValue(Vvested, keyVestedUSDN))
   ]
 }
 
@@ -198,8 +202,8 @@ if (i.caller != invoker) then throw("no access") else
     then invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "withdrawVestedAllUSDN", [false, true], [])
     else unit
   strict swapXtnVvxtnlp = 
-    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < getIntegerValue(keyMaxPrice)) && (assetBalance(this, xtnId) > 5 * tryGetInteger(this, keyBurnAmount))
-    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId) - 5 * tryGetInteger(this, keyBurnAmount))
+    if (fraction(assetBalance(vvxtnlpXTNamm, xtnId), d6, assetBalance(vvxtnlpXTNamm, vvxtnlp)) < getIntegerValue(keyMaxPrice)) && (assetBalance(this, xtnId) > (5 * tryGetInteger(this, keyBurnAmount)))
+    then swapWX(xtnId, vvxtnlp, assetBalance(this, xtnId) - (5 * tryGetInteger(this, keyBurnAmount)))
     else unit
   []
 }
