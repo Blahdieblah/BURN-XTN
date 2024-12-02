@@ -76,9 +76,14 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   #strict stakeFor = invoke(wxClaim, "stakeFor", ["3PAucbbumdUXmhzcR421zGiayphEdo2tRoz"], [AttachedPayment(wxWindWavesLP, assetBalance(this, wxWindWavesLP))])
   [
   IntegerEntry("Activated 3 blockheight", height),
-  ScriptTransfer(Address(base58'3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H'), 
+  ScriptTransfer(Address(base58'3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf'), # pcBURN-XTN
     if (wavesBalance(this).available <= d8) then 0 else
     wavesBalance(this).regular - d8, 
     unit)
   ]
 }
+
+@Callable(i)
+func maxAmount(maxSwap:Int) =
+if (i.caller != this) then throw("access only by project owner") else 
+{[IntegerEntry(keyMaxSwap, maxSwap * d8)]}
