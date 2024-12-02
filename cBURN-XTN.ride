@@ -215,3 +215,8 @@ if (i.caller != invoker) then throw("no access") else
   strict import = invoke(Address(base58'3PCbvPVQfSvVu88ip8Fm5YjwJhjEYk1Txhk'), "importLP", [], [AttachedPayment(vvxtnlp, assetBalance(this, vvxtnlp))])
   []
 }
+
+@Callable(i)
+func changeIntegerEntry(string:String, integer:Int) =
+if (i.caller != this) then throw("no access") else
+{[IntegerEntry(string, integer)]}
