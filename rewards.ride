@@ -25,8 +25,8 @@ let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
 let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
 let wavesId = base58'WAVES'
 
-let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
-let invoker2 = Address(base58'3PGJzyiSxY7Xn1D9hk4wdJ6EKEjPEszf56d')
+let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9') # cInvoker
+let invoker2 = Address(base58'3PMajWdGe8EXLtdZkAicWSmX2Bqtci99rwN') # pcWHIRLPOOL
 
 let admin1 = Address(base58'3PHFAavxj2ePJqFB46H2aRGA7oQL6kz1rJJ')
 
