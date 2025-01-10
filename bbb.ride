@@ -106,23 +106,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
     IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
     IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool)),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
-    IntegerEntry(keyInvokeNext, 2),
-    IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
-    IntegerEntry("puzzle staked", puzzleStaked),
-    IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
-    IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle),
-    IntegerEntry("WFS puzzle value", fraction(
-      fraction(tryGetInteger(this, keyTotalPuzzleValue),
-      1, 
-      110),
-        10,
-        9)),
-    IntegerEntry("BBB puzzle value", fraction(
-      fraction(tryGetInteger(this, keyTotalPuzzleValue),
-      10, 
-      110),
-        10,
-        9))
+    IntegerEntry(keyInvokeNext, 2)
     ]
 }
 
@@ -240,4 +224,27 @@ func setTradeMode(tradeMode:Boolean) =
 if (i.caller != this) then throw("access only by project owner") else
 {
   [BooleanEntry(keyTradeMode, tradeMode)]
+}
+
+@Callable(i)
+func stats() =
+{
+  [
+  IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
+  IntegerEntry("puzzle staked", puzzleStaked),
+  IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
+  IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle),
+  IntegerEntry("WFS puzzle value", fraction(
+    fraction(tryGetInteger(this, keyTotalPuzzleValue),
+    1, 
+    110),
+      10,
+       9)), 
+  IntegerEntry("BBB puzzle value", fraction(
+    fraction(tryGetInteger(this, keyTotalPuzzleValue),
+    10, 
+    110),
+    10,
+    9))
+    ]
 }
