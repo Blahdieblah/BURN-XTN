@@ -244,8 +244,6 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
 @Callable(i)
 func invokerBurn3t() = 
 if i.caller != this then throw("no") else
-if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
-then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   [ScriptTransfer(bot, d6, unit)]
