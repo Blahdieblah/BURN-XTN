@@ -3,6 +3,7 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 {-# IMPORT artifacts/mainnet.ride #-}
 
+let d6 = 1000000
 let d8 = 100000000
 
 func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
@@ -17,9 +18,6 @@ let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
 let keyBotAddress = "bot address string"
 let keyActivated3 = "Activated 3 blockheight"
-let keyMinImportAmountBurn = "minimum import amount burn"
-
-let d6 = 1000000
 
 let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
@@ -36,35 +34,6 @@ let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
 #let cProjects = Address(base58'3PEttW5oXtd38jVBSLLoTaDL829RJbW7pRb')
 
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
-
-let keyVestedUSDN = toString(burn) + "_USDN"
-
-@Callable(i)
-func invoker() = 
-if i.caller != Address(base58'3PQ23xgnf98t4qDtF5bscxdCDwgYoL7SPeK') && i.caller != Address(base58'3PDcEeHZcvhExJE4CsN2XSSWtPSwNDKWBh5') then throw("no") else
-{
-  strict inv1a = if (getIntegerValue(Vvested, keyVestedUSDN) > 0) 
-    then invoke(burn, "withdraw", [], []) 
-    else unit
-  strict inv1b = if (assetBalance(burn, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
-    then invoke(burn, "importVVXTNLP", [], [])
-    else unit
-  strict inv2a = invoke(pzsc, "withdraw", [], []) 
-  strict inv2b = if (assetBalance(pzsc, vvxtnlp) > getIntegerValue(this, keyMinImportAmountBurn) * d6) 
-    then invoke(pzsc, "importVVXTNLP", [], [])
-    else unit
-  []
-}
-
-@Callable(i)
-func setAmountBurn(amount:Int) = 
-if i.caller != this then throw("no") else
-{
-  [
-  IntegerEntry(keyMinImportAmountBurn, amount),
-  IntegerEntry("total XTN in vesting BURN-XTN", getIntegerValue(Vvested, keyVestedUSDN))
-  ]
-}
 
 @Callable(i)
 func invokerBBB() = 
@@ -167,7 +136,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 {
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
   [
@@ -232,7 +201,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
 {
   strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if wavesBalance(cold).available > d8 then invoke(cold, "stakeUnstake", [true, 0], []) else unit
-  strict burn3 = invoke(burn, "invoke3", [], [])
+  #strict burn3 = invoke(burn, "invoke3", [], [])
   strict burn4 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
   [
