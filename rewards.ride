@@ -15,6 +15,9 @@ let burnxtnString = toBase58String(burnxtnId)
 let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
 let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
 let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
+let wavesdlp = base58'HYogWffUjS8Uw4bYA1Dn3qrGmJerMqkf139aJcHhk8yq'
+let romekeeper = base58'HTaRkjbyQ33UmpPVm839o8psfaHg9R4cStGWH8hCtYqv'
+let usdterc20 = base58'9wc3LXNA4TEBsXyKtoLE9mrbDD7WMHXvXrCjZvabLAsi'
 
 let westId = base58'4LHHvYGNKJUg5hj65aGD5vgScvCBmLpdRFtjokvCjSL8'
 let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
@@ -26,7 +29,7 @@ let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
 let wavesId = base58'WAVES'
 
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9') # cInvoker
-let invoker2 = Address(base58'3PMajWdGe8EXLtdZkAicWSmX2Bqtci99rwN') # pcWHIRLPOOL
+let invoker2 = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY') # Whirlpool Payout
 
 let admin1 = Address(base58'3PHFAavxj2ePJqFB46H2aRGA7oQL6kz1rJJ')
 
@@ -34,21 +37,16 @@ let admin1 = Address(base58'3PHFAavxj2ePJqFB46H2aRGA7oQL6kz1rJJ')
 func adminRewards() = 
 if (i.caller != invoker && i.caller != invoker2 && i.caller != this) then throw("no access admin rewards") else {
     strict claimInv = invoke(Address(poolBBB), "claimIndexRewards", [], [])
-    strict amountBurnxtn = assetBalance(this, burnxtnId)
-    strict amountWhirlpool = assetBalance(this, whirlpool)
     strict amountWaves = if wavesBalance(this).available - d8/10 > 0 then wavesBalance(this).available - d8/10 else 0
-    strict amountRome = assetBalance(this, rome)
-    strict amountPuzzle = assetBalance(this, puzzle)
     [
-    ScriptTransfer(admin1, amountBurnxtn, burnxtnId),
-    ScriptTransfer(admin1, amountWhirlpool, whirlpool),
+    ScriptTransfer(admin1, assetBalance(this, burnxtnId), burnxtnId),
+    ScriptTransfer(admin1, assetBalance(this, whirlpool), whirlpool),
     ScriptTransfer(admin1, amountWaves, unit),
-    ScriptTransfer(admin1, amountRome, rome),
-    ScriptTransfer(admin1, amountPuzzle, puzzle)
-    #,ScriptTransfer(admin2, amountBurnxtn, burnxtnId),
-    #ScriptTransfer(admin2, amountWhirlpool, whirlpool),
-    #ScriptTransfer(admin2, amountWaves, unit),
-    #ScriptTransfer(admin2, amountRome, rome),
-    #ScriptTransfer(admin2, amountPuzzle, puzzle)
+    ScriptTransfer(admin1, assetBalance(this, rome), rome),
+    ScriptTransfer(admin1, assetBalance(this, puzzle), puzzle),
+    ScriptTransfer(admin1, assetBalance(this, xtnId), xtnId),
+    ScriptTransfer(admin1, assetBalance(this, wavesdlp), wavesdlp),
+    ScriptTransfer(admin1, assetBalance(this, romekeeper), romekeeper),
+    ScriptTransfer(admin1, assetBalance(this, usdterc20), usdterc20)
     ]
 }
