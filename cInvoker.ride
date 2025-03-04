@@ -32,6 +32,7 @@ let cold = Address(base58'3PAX4yj66rLEGLcK93ZPaBhkwaoujEr7nSC') # pcCold
 let pzsc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
 let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
 #let cProjects = Address(base58'3PEttW5oXtd38jVBSLLoTaDL829RJbW7pRb')
+let whirlPay = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
 
@@ -121,6 +122,8 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
+  strict whirlStats = invoke(whirlPay, "priceStats", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 2)
