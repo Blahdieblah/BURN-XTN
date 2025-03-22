@@ -1,0 +1,47 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let whirlpoolProjectAddress = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
+let s = Address(base58'3PKjY3hmP1BCWtmhpXw9Ly85sgiQvpgq4wC')
+
+let poolboostSC = base58'3P8eeDzUnoDNbQjW617pAe76cEUDQsP1m1V'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+
+@Callable(i)
+func boostPoolAPY()= 
+if (i.caller != this) && (i.caller != whirlpoolProjectAddress) && (i.caller != s) then throw("access only by project owner") else
+{
+  strict boost = invoke(Address(poolboostSC), "addBoosting", ["3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk", 7], [AttachedPayment(burnxtnId, assetBalance(this, burnxtnId))])
+  []
+}
+
+@Callable(i)
+func airdrop (addresses:List[String]) = 
+{
+  let assetId = i.payments[0].assetId
+  let amount = i.payments[0].amount
+  let amountPerAddress = (amount / size(addresses))
+  func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), amountPerAddress, assetId)]
+  FOLD<100>(addresses, nil, f)
+}
+
+@Callable(i)
+func zealyRewards (addresses:List[String]) = 
+if size(addresses) > 11 then throw("more then 11 addresses") else 
+{
+  let assetId = i.payments[0].assetId
+  let amount = i.payments[0].amount
+  
+  func prizeAmount (address:String) =
+    {
+    if address == getElement(addresses, 0) then fraction(amount, 30, 100) else 
+    if address == getElement(addresses, 1) then fraction(amount, 20, 100) else 
+    if address == getElement(addresses, 2) then fraction(amount, 10, 100) else 
+    fraction(amount, 5, 100) 
+    }
+
+  func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), prizeAmount(address), assetId)]
+  FOLD<100>(addresses, nil, f)
+}
