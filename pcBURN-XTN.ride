@@ -1,0 +1,201 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetInteger (address:Address, key:String)= match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+let keyBurnAmount = "burn amount"
+let keyBurnInput = "burn input"
+let keyBurnxtnAmount = "burn BURN-XTN amount"
+let keyMaxSwap = "max amount swap"
+let keyTreasury = "Treasury USD value"
+let keyHarvestSwop ="harvest SWOP"
+
+let swopWAVESxtn = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
+let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
+let swopBURNXTNwaves = Address(base58'3PB9YQ3f1moai3Ra4tbJDM3uJy1esQNJ4aT')
+let swopSWOPxtn = Address(base58'3P27S9V36kw2McjWRZ37AxTx8iwkd7HXw6W')
+let swopShareTokens = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
+let swopFarm = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
+let swopGov = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
+let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
+let oburn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
+
+let d6 = 1000000
+let d8 = 100000000
+
+let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
+let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let poolBW = base58'3P48ZN6yghcoQaHPtLM9V2hFc5cd4ARd1hc'
+
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
+let swaves = base58'YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7'
+let usdtu = base58'B45iYkZVC9cudR2yxrsJnrM75StiTrwphbfQ7xkyisip'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
+let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
+let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
+
+# calculate value of sWAVES to WAVES
+let SWAVES_stake = Address(base58'3PDPzZVLhN1EuzGy4xAxjjTVkawKDLEaHiV')
+func _loadInt (key_:String,default_:Int) = match getInteger(SWAVES_stake, key_) {
+    case a: Int => 
+        a
+    case _ => 
+        default_
+}
+
+func _loadBigInt (key_:String,default_:BigInt) = match getBinary(SWAVES_stake, key_) {
+    case a: ByteVector => 
+        toBigInt(a)
+    case _ => 
+        default_
+}
+
+    let WX_BURNXTN_WAVES = Address(base58'3P5vwLbXddLWpsRspftMxLuzfsjk3dLT3n5')
+    let WX_WAVES_USD = Address(base58'3PMtGVdjrQYQxTx3BpFysyeEJVo7t1fB6Xk')
+    let lastRate = _loadBigInt("LAST_RATE", toBigInt(1000000000000))
+    let currentRate = _loadBigInt("CURRENT_RATE", toBigInt(0))
+    let lastHeight = _loadInt("LAST_HEIGHT", 0)
+    let targetHeight = min([_loadInt("TARGET_HEIGHT", 0), height])
+    let lastRateUpdated = (lastRate + (currentRate * toBigInt((targetHeight - lastHeight))))
+    let baseAmount = toInt(fraction(toBigInt(assetBalance(WX_BURNXTN_WAVES, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+    let baseAmount2 = toInt(fraction(toBigInt(assetBalance(WX_WAVES_USD, swaves)), lastRateUpdated, toBigInt(1000000000000), FLOOR))
+
+let wavesInWX = wavesBalance(WX_BURNXTN_WAVES).regular + baseAmount
+let burnxtnInWX = assetBalance(WX_BURNXTN_WAVES, burnxtnId)
+let burnxtnwavesprice = fraction(d8, wavesInWX, burnxtnInWX)
+
+let wavesInWX2 = wavesBalance(WX_WAVES_USD).regular + baseAmount2
+let usdInWX = assetBalance(WX_WAVES_USD, usdtu)
+let wavesusdprice = fraction(d8, usdInWX, wavesInWX2)
+
+let burnxtnusdprice = fraction(burnxtnwavesprice, wavesusdprice, d8)
+
+let ATH = if burnxtnwavesprice > getIntegerValue("ATH in wavelets") then burnxtnwavesprice else getIntegerValue(this, "ATH in wavelets")
+let ATHusd = if burnxtnusdprice > getIntegerValue("ATH in centlets") then burnxtnusdprice else getIntegerValue(this, "ATH in centlets")
+let pricegrowth = (fraction(d8, burnxtnwavesprice, getIntegerValue(this, "intial price BURN-XTN in wavelets")) - d8) / 1000000
+
+func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
+  {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
+
+let treasury = 
+  ((fraction(getIntegerValue(swopShareTokens, "3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf_share_tokens_virtual"),
+  (wavesBalance(swopWAVESxtn).regular * 2),
+  getIntegerValue(swopShareTokens, "3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG_total_share_tokens_locked"))
+  * wavesusdprice / d6)
+  +
+  (fraction(getIntegerValue(swopShareTokens, "3PB9YQ3f1moai3Ra4tbJDM3uJy1esQNJ4aT_3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf_share_tokens_virtual"),
+  wavesBalance(swopBURNXTNwaves).regular,
+  getIntegerValue(swopShareTokens, "3PB9YQ3f1moai3Ra4tbJDM3uJy1esQNJ4aT_total_share_tokens_locked"))
+  * wavesusdprice / d6))
+  /
+  d8
+
+func swapAmount(assetid:ByteVector) = 
+{if assetBalance(this, assetid) > getIntegerValue(keyMaxSwap) then getIntegerValue(keyMaxSwap) else assetBalance(this, assetid)}
+
+@Callable(i)
+func invoke1() = 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
+{
+  strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
+  let amount = if (wavesBalance(this).regular - d8) > 0 && (wavesBalance(this).regular - d8) < d8 then (wavesBalance(this).regular - d8) else d8
+  strict swapWavesXTN = if wavesBalance(this).regular - d8 > 0 then invoke(swopWAVESxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(unit, amount)]) else unit
+  let burnInput = getIntegerValue(this, keyBurnInput)
+  strict burnRate = if treasury > getIntegerValue(this, keyTreasury) 
+    then if (burnInput < 100) then invoke(this, "burnAmount", [burnInput+1], []) else unit
+    else if (burnInput > 0) then invoke(this, "burnAmount", [burnInput-1], []) else unit
+  strict getPZ = if ((assetBalance(this, puzzle) / 2) > 0) then
+    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, (assetBalance(this, puzzle) / 2))]) else unit
+  [IntegerEntry("Activated blockheight", height)]
+}
+
+@Callable(i)
+func invoke2() =
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
+{
+  strict surfBalanceBefore = assetBalance(this, surfId)
+  strict swapXtnSurf = if assetBalance(this, xtnId) >= 5 * tryGetInteger(this, keyBurnAmount) then invoke(swopXTNsurf, "callFunction", ["exchange", ["1"]], [AttachedPayment(xtnId, tryGetInteger(this, keyBurnAmount) * 2)]) else unit
+  let surfDifference = (assetBalance(this, surfId) - surfBalanceBefore) / 2
+
+  strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
+  strict swapXtnBurnxtn = if assetBalance(this, xtnId) >= 3 * tryGetInteger(this, keyBurnAmount) then swapWX(xtnId, burnxtnId, tryGetInteger(this, keyBurnAmount) * 2) else unit
+  let burnxtnDifference = (assetBalance(this, burnxtnId) - burnxtnBalanceBefore) / 2
+
+  strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
+    invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
+
+  strict withdrawSwopGov = if (getBooleanValue(this, keyHarvestSwop) == true) then invoke(swopGov, "claimAndWithdrawSWOP", [], []) else unit
+  strict withdrawSwopFarm = if (getBooleanValue(this, keyHarvestSwop) == true) then invoke(swopFarm, "claimAll", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG", "3PB9YQ3f1moai3Ra4tbJDM3uJy1esQNJ4aT"]], []) else unit
+  strict swapSwopXtn = if assetBalance(this, swopId) >= 10000 && swapAmount(swopId) >= 10000 
+    then invoke(swopSWOPxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(swopId, swapAmount(swopId))]) else unit
+  [
+  ScriptTransfer(invoker, if assetBalance(this, xtnId) >= tryGetInteger(this, keyBurnAmount) then tryGetInteger(this, keyBurnAmount) else 0, xtnId),
+  ScriptTransfer(invoker, surfDifference, surfId),
+  ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
+  ScriptTransfer(oburn, assetBalance(this, wxId), wxId)
+  ]
+}
+
+@Callable(i)
+func burnAmount(amount:Int) = # amount per week
+if (i.caller != this) then throw("access only by project owner") else
+{
+  [
+  IntegerEntry(keyBurnAmount, amount * d6 / 7),
+  IntegerEntry(keyBurnInput, amount)
+  ]
+}
+
+@Callable(i)
+func maxAmount(maxSwap:Int) =
+if (i.caller != this) then throw("access only by project owner") else 
+{[IntegerEntry(keyMaxSwap, maxSwap * d8)]}
+
+@Callable(i)
+func harvestSwop(harvest:Boolean) =
+if (i.caller != this) then throw("access only by project owner") else 
+{[BooleanEntry(keyHarvestSwop, harvest)]}
+
+@Callable(i)
+func projectStats() =
+{
+  [
+  IntegerEntry("BURN-XTN/WAVES price in wavelets", burnxtnwavesprice),
+  IntegerEntry("ATH in wavelets", ATH),
+  IntegerEntry("BURN-XTN/USD price in centlets", burnxtnusdprice),
+  IntegerEntry("ATH in centlets", ATHusd),
+  IntegerEntry("Price growth %", pricegrowth),
+    
+  IntegerEntry("XTN total burned", getIntegerValue(invoker, "XTN total burned") / d6),
+  IntegerEntry("SURF total burned", getIntegerValue(invoker, "SURF total burned") / d6),
+  IntegerEntry("BURN-XTN total burned", 1000000000 - match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")}),
+  IntegerEntry("BURN-XTN supply", match assetInfo(burnxtnId) {
+    case asset:Asset =>
+        asset.quantity / d8
+    case _ => throw("Can't find asset")}),
+  IntegerEntry(keyTreasury, treasury)
+  ]
+}
+
+@Callable(i)
+func changeIntegerEntry(string:String, integer:Int) =
+if (i.caller != this) then throw("no access") else
+{[IntegerEntry(string, integer)]}
+
+@Callable(i)
+func deleteEntry (keyString:String) = 
+if (i.caller != this) then throw("access only by project owner") else
+  {[DeleteEntry(keyString)]}
