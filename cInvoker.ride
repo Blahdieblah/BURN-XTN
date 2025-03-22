@@ -19,7 +19,6 @@ let keyActivated2 = "Activated 2 blockheight"
 let keyBotAddress = "bot address string"
 let keyActivated3 = "Activated 3 blockheight"
 
-let vvxtnlp = base58'8KEtor9aSsSj38MknyAE7k1uRThHY9prAXgiE4D7WpyL'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
@@ -31,7 +30,6 @@ let whi = Address(base58'3PMajWdGe8EXLtdZkAicWSmX2Bqtci99rwN') # pcWhirlpool
 let cold = Address(base58'3PAX4yj66rLEGLcK93ZPaBhkwaoujEr7nSC') # pcCold
 let pzsc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
 let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
-#let cProjects = Address(base58'3PEttW5oXtd38jVBSLLoTaDL829RJbW7pRb')
 let whirlPay = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 
 let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
@@ -121,7 +119,6 @@ if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
-  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
   strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
   [
@@ -137,11 +134,11 @@ if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
+  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict burn3 = invoke(this, "burnXTN", [], [])
+  strict stats = invoke(burn, "projectStats", [], [])
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
-  #strict burn3 = invoke(burn, "invoke3", [], [])
-  strict burn4 = invoke(this, "burnXTN", [], [])
-  strict stats = invoke(burn, "projectStats", [], [])
   [
   ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
   IntegerEntry(keyInvokeNext, 1)
@@ -158,7 +155,13 @@ then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivate
   strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
   strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
   strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
-  [ScriptTransfer(bot, d6, unit)]
+  [
+  ScriptTransfer(bot, d6, unit),
+  ScriptTransfer(
+    cold, 
+    if wavesBalance(this).available > (10 * d8) then wavesBalance(this).available - (10 * d8) else 0, 
+    unit)
+  ]
 }
 
 @Callable(i)
@@ -190,7 +193,8 @@ if i.caller != this then throw("no") else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2 first") else
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
-  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
+  strict whirlStats = invoke(whirlPay, "priceStats", [], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 2)
@@ -202,11 +206,11 @@ func invokerBurn2t() =
 if i.caller != this then throw("no") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1 first") else
 {
-  strict stakeW = invoke(whi, "stakeUnstake", [true, 0], [])
-  strict stakeW2 = if wavesBalance(cold).available > d8 then invoke(cold, "stakeUnstake", [true, 0], []) else unit
-  #strict burn3 = invoke(burn, "invoke3", [], [])
-  strict burn4 = invoke(this, "burnXTN", [], [])
+  strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
+  strict burn3 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
+  strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
+  strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
   [
   ScriptTransfer(bot, d6, unit),
   IntegerEntry(keyInvokeNext, 1)
@@ -218,5 +222,8 @@ func invokerBurn3t() =
 if i.caller != this then throw("no") else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
+  strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
+  strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
+  strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
   [ScriptTransfer(bot, d6, unit)]
 }
