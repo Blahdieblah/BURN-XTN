@@ -15,7 +15,8 @@ let keyBurnInput = "burn input"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
 let keyMaxSwap = "max amount swap"
 let keyTreasury = "Treasury USD value"
-let keyHarvestSwop ="harvest SWOP"
+let keyHarvestSwop = "harvest SWOP"
+let keySwapWavesXTN = "swap WAVES to XTN"
 
 let swopWAVESxtn = Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG')
 let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
@@ -109,7 +110,9 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 {
   strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
   let amount = if (wavesBalance(this).regular - d8) > 0 && (wavesBalance(this).regular - d8) < d8 then (wavesBalance(this).regular - d8) else d8
-  strict swapWavesXTN = if wavesBalance(this).regular - d8 > 0 then invoke(swopWAVESxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(unit, amount)]) else unit
+  strict swapWavesXTN = if (getBooleanValue(this, keySwapWavesXTN) == true) then
+    if wavesBalance(this).regular - d8 > 0 then invoke(swopWAVESxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(unit, amount)]) else unit
+    else unit
   let burnInput = getIntegerValue(this, keyBurnInput)
   strict burnRate = if treasury > getIntegerValue(this, keyTreasury) 
     then if (burnInput < 100) then invoke(this, "burnAmount", [burnInput+1], []) else unit
@@ -160,6 +163,11 @@ if (i.caller != this) then throw("access only by project owner") else
 func maxAmount(maxSwap:Int) =
 if (i.caller != this) then throw("access only by project owner") else 
 {[IntegerEntry(keyMaxSwap, maxSwap * d8)]}
+
+@Callable(i)
+func swapWavesXTN(swap:Boolean) =
+if (i.caller != this) then throw("access only by project owner") else 
+{[BooleanEntry(keySwapWavesXTN, swap)]}
 
 @Callable(i)
 func harvestSwop(harvest:Boolean) =
