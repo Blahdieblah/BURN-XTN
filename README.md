@@ -1,11 +1,10 @@
-# BURN-XTN dApp can perform all project actions.
-dApp: https://waves-dapp.com/3PCQPZihk2Ji2gxaRgtLANL27PQYfTyuk2H
-
-According to tokenomics model: https://www.burnxtn.tech
+# BURN-XTN dApp 
+Performs all project actions, according to tokenomics model: https://www.burnxtn.tech
+dApp: https://waves-dapp.com/3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf
 
 
 # BBB & WFS NFTs
-dApp: https://waves-dapp.com/3PQrvbs3jtXJHkfYcKHefUzbdhpg4b8knP2
+dApp: https://waves-dapp.com/3P6GgqAF4Vv4g2PFsevhKUW7JGtVUfvbULV
 
 According to tokenomics model: https://www.burnxtn.tech/nft-series
 
