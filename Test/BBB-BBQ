@@ -126,9 +126,9 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func distributeRewardsBBQ(address:String)= 
 if (i.caller != this) then throw("access only by project owner") else
 {
-    func foldFuncC(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
+    func foldFuncD(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
     + if (tryGetString(puzzleMarket, "nft_" + BBQ + "_seller") == address) then 1 else 0
-    let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncC)
+    let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncD)
     [ScriptTransfer(addressFromStringValue(address), amountBBQ * d6 * 2, surf)]
 }
 
@@ -181,7 +181,11 @@ if (i.caller != this) then throw("access only by project owner") else
     + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
     let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
 
-    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
+    func foldFuncD(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
+    + if (tryGetString(puzzleMarket, "nft_" + BBQ + "_seller") == address) then 1 else 0
+    let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncD)
+
+    if ((shareWFS + shareBBB + amountSURFboard + amountBBQ) == 0) then
     { 
         let list = split_4C(addresses, ",")
         let noNFTindex = value(indexOf(list, address))
