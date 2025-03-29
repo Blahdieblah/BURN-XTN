@@ -16,7 +16,6 @@ func tryGetInteger (address:Address, key:String) = match getInteger(address, key
 let keyInvokeNext = "invoke next"
 let keyActivated = "Activated blockheight"
 let keyActivated2 = "Activated 2 blockheight"
-let keyBotAddress = "bot address string"
 let keyActivated3 = "Activated 3 blockheight"
 
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
@@ -32,15 +31,10 @@ let pzsc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
 let Vvested = Address(base58'3PKZk5TdPCLP2GZviipLFfK46ExTnwkRCBd')
 let whirlPay = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
 
-let bot = addressFromStringValue(getStringValue(this, keyBotAddress))
-
 @Callable(i)
 func invokerBBB() = 
-if i.caller != bot then throw("no") else
-{
-  strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
-  []
-}
+{strict inv = if tryGetInteger(bbb, keyInvokeNext) == 2 then invoke(this, "BBB2", [], []) else invoke(this, "BBB1", [], [])
+[]}
 
 @Callable(i)
 func BBB1() = 
@@ -49,7 +43,8 @@ if getIntegerValue(bbb, keyActivated) + 7 * 1440 > height
 then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440)) else
 {
     strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
-    [ScriptTransfer(bot, d6, unit)]
+    strict inv2 = invoke(bbb, "distributeBBQ", [], [])
+    [ScriptTransfer(i.originCaller, d6, unit)]
 }
 
 @Callable(i)
@@ -59,33 +54,8 @@ if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height
 then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
   {
     strict inv = invoke(bbb, "distribute", [], [])
-    [ScriptTransfer(bot, d6, unit)]
+    [ScriptTransfer(i.originCaller, d6, unit)]
   }
-
-@Callable(i)
-func BBB1any() = 
-if getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2 > height 
-then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated) + 7 * 1440 + 2)) else
-if tryGetInteger(bbb, keyInvokeNext) == 2 then throw("invoke BBB2any first") else
-  {
-    strict inv = invoke(bbb, "claimInvestPuzzle", [], [])
-    [ScriptTransfer(i.caller, d6, unit)]
-  }
-
-@Callable(i)
-func BBB2any() = 
-if getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2 > height 
-then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440 + 2)) else
-if tryGetInteger(bbb, keyInvokeNext) == 1 then throw("invoke BBB1any first") else
-  {
-    strict inv = invoke(bbb, "distribute", [], [])
-    [ScriptTransfer(i.caller, d6, unit)]
-  }
-
-@Callable(i)
-func botAddress(address:String) =
-if i.caller != this then throw("no") else
-{[StringEntry(keyBotAddress, address)]}
 
 @Callable(i)
 func changeIntegerEntry(keyString:String, integer:Int) = 
@@ -113,7 +83,6 @@ if (i.caller != this && i.caller != burn) then throw("access only by project own
 
 @Callable(i)
 func invokerBurn1() = 
-if i.caller != bot then throw("no") else
 if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
@@ -122,14 +91,13 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
   strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
   [
-  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  ScriptTransfer(i.originCaller, d6, unit),
   IntegerEntry(keyInvokeNext, 2)
   ]
 }  
 
 @Callable(i)
 func invokerBurn2() = 
-if i.caller != bot then throw("no") else
 if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
 if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
@@ -140,14 +108,13 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
   [
-  ScriptTransfer(bot, if i.caller == bot then d6 else 0, unit),
+  ScriptTransfer(i.originCaller, d6, unit),
   IntegerEntry(keyInvokeNext, 1)
   ]
 }  
 
 @Callable(i)
 func invokerBurn3() = 
-if i.caller != bot then throw("no") else
 if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
 then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
@@ -155,22 +122,7 @@ then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivate
   strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
   strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
   strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
-  [
-  ScriptTransfer(bot, d6, unit),
-  ScriptTransfer(
-    cold, 
-    if wavesBalance(this).available > (10 * d8) then wavesBalance(this).available - (10 * d8) else 0, 
-    unit)
-  ]
-}
-
-@Callable(i)
-func invokerBurn3any() = 
-if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 + 2 >= height 
-then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440 + 2)) else
-{
-  strict burn4 = invoke(oBurn, "invoke4", [], [])
-  [ScriptTransfer(bot, d6, unit)]
+  [ScriptTransfer(i.originCaller, d6, unit)]
 }
 
 @Callable(i)
@@ -195,10 +147,7 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
-  [
-  ScriptTransfer(bot, d6, unit),
-  IntegerEntry(keyInvokeNext, 2)
-  ]
+  [IntegerEntry(keyInvokeNext, 2)]
 }  
 
 @Callable(i)
@@ -211,10 +160,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
   strict stats = invoke(burn, "projectStats", [], [])
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
-  [
-  ScriptTransfer(bot, d6, unit),
-  IntegerEntry(keyInvokeNext, 1)
-  ]
+  [IntegerEntry(keyInvokeNext, 1)]
 }
 
 @Callable(i)
@@ -225,5 +171,5 @@ if i.caller != this then throw("no") else
   strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
   strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
   strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
-  [ScriptTransfer(bot, d6, unit)]
+  []
 }
