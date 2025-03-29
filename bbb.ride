@@ -33,6 +33,7 @@ let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
 let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
+let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 
 let puzzleStaked = tryGetInteger(puzzleStaking, toString(this) + "_staked")
 let puzzleInPool = tryGetInteger(Address(poolBBB), ("global_" + toBase58String(puzzle)) + "_balance")
@@ -59,6 +60,7 @@ let keyTotalPuzzlePaid = "Total PUZZLE paid"
 let keyRomeBalance = "ROME balance"
 let keyInvokeNext = "invoke next"
 let keyTradeMode = "trade mode"
+let keyBBQreward = "BBQ reward"
 
 let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
 let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
@@ -84,6 +86,7 @@ let SURFboardList = [
     "7NEFBnvGGMfYdBnhMLNpuVgS22LpcgXCZgHfm8DHmmiA",
     "GoF9yokxHgPNoxoWgjjdmGeWhcLYArSsxqffRtfYGtfs"
 ]
+let BBQlist = ["HRP1T1JMBFRfrsci8q2DhTyEDSy3GokG4puAaWqfSEge", "6GYMMKSpoqSvjeAA1stKkspcLgULQgHE76k6gw68TLCq", "BLEyyvP4RnqgFQo4Xaxqwbmu1Vky1khfHYLs5JfzhRdS", "E7aNXvACHJyLk2eDS8WECLDTVLkSAHM7GhxeHUyeEcy7"]
 
 @Callable(i)
 func claimInvestPuzzle()= 
@@ -111,6 +114,32 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 }
 
 @Callable(i)
+func distributeBBQ()= 
+if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
+{
+    let list = split_4C(addresses, ",")
+    func r(accum:List[Int], address:String)=
+    {invoke(this, "distributeRewardsBBQ", [address], [])}
+    strict invokerrr = {FOLD<30>(list, [], r)}
+    []
+}
+
+@Callable(i)
+func distributeRewardsBBQ(address:String)= 
+if (i.caller != this) then throw("access only by project owner") else
+{
+    func foldFuncD(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
+    + if (tryGetString(puzzleMarket, "nft_" + BBQ + "_seller") == address) then 1 else 0
+    let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncD)
+    [ScriptTransfer(addressFromStringValue(address), if assetBalance(this, xtnId) >= fraction(d6, getIntegerValue(this, keyBBQreward), 100) then amountBBQ * fraction(d6, getIntegerValue(this, keyBBQreward), 100) else 0, xtnId)]
+}
+
+@Callable(i)
+func setBBQreward(XTNdiv100:Int)= 
+if (i.caller != this) then throw("access only by project owner") else
+{[IntegerEntry(keyBBQreward, XTNdiv100)]}
+
+@Callable(i)
 func distribute()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
@@ -119,7 +148,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
     func r(accum:List[Int], address:String)=
     {invoke(this, "distributeRewards", [address], [])}
     strict invokerrr = {FOLD<40>(list, [], r)}
-    strict bs = invoke(this, "burnSurf", [], [])
+    strict bs = if assetBalance(this, surf) >= d6 then invoke(this, "burnSurf", [], []) else unit
     [
     IntegerEntry("Activated 2 blockheight", height),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
@@ -159,7 +188,11 @@ if (i.caller != this) then throw("access only by project owner") else
     + if (tryGetString(puzzleMarket, "nft_" + SURFboard + "_seller") == address) then 1 else 0
     let amountSURFboard = FOLD<20>(SURFboardList, 0, foldFuncC)
 
-    if ((shareWFS + shareBBB + amountSURFboard) == 0) then
+    func foldFuncD(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
+    + if (tryGetString(puzzleMarket, "nft_" + BBQ + "_seller") == address) then 1 else 0
+    let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncD)
+
+    if ((shareWFS + shareBBB + amountSURFboard + amountBBQ) == 0) then
     { 
         let list = split_4C(addresses, ",")
         let noNFTindex = value(indexOf(list, address))
@@ -178,7 +211,7 @@ if (i.caller != this) then throw("access only by project owner") else
     ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
     ScriptTransfer(addressFromStringValue(address), amountWaves, unit),
     ScriptTransfer(addressFromStringValue(address), amountRome, rome),
-    ScriptTransfer(addressFromStringValue(address), amountSURFboard * d6, surf)
+    ScriptTransfer(addressFromStringValue(address), if assetBalance(this, surf) >= (amountSURFboard * d6) then amountSURFboard * d6 else 0, surf)
     ]
 }
 
@@ -195,7 +228,7 @@ if (i.caller != this) then throw("access only by project owner") else
 @Callable(i)
 func register() =
 if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
-if size(split_4C(addresses, ",")) == 30 then throw("max reached") else
+if size(split_4C(addresses, ",")) == 30 then throw("max registrations reached") else
 {[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ","))]}
 
 @Callable(i)
