@@ -1,14 +1,19 @@
 # BURN-XTN dApp 
-Performs all project actions, according to tokenomics model: https://www.burnxtn.tech
+Performs all project actions, according to tokenomics model: https://www.burnxtn.tech  
 dApp: https://waves-dapp.com/3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf
 
+# cInvoker.ride for BURN-XTN
+dApp: https://waves-dapp.com/3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9  
+func invokerBurn1 every day at a certain time  
+func invokerBurn2 every day at a certain time  
+func invokerBurn3 after 7 * 1440 blocks since last activation  
+dApp invocations are rewarded with 0.01 WAVES
 
-# BBB & WFS NFTs
-dApp: https://waves-dapp.com/3P6GgqAF4Vv4g2PFsevhKUW7JGtVUfvbULV
-
+# NFT Series
+dApp: https://waves-dapp.com/3P6GgqAF4Vv4g2PFsevhKUW7JGtVUfvbULV  
+Registration of wallet address for distributing rewards.  
 According to tokenomics model: https://www.burnxtn.tech/nft-series
 
-dApp is callable by Galka after 7 * 1440 blocks, and by anybody after 7 * 1440 + 2 blocks since last activation, through dApp: https://waves-dapp.com/3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9
-dApp invocations are rewarded with 0.01 WAVES.
-Function: BBB1any, claims Puzzle staking rewards, generateWithOneToken and claim LP rewards BBB & WFS, stake PZ bbb.
-Function: BBB2any, distribute rewards to all NFT holders.
+# cInvoker.ride for NFT Series
+dApp is callable by anybody after 7 * 1440 blocks since last activation, through dApp: https://waves-dapp.com/3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9 func invokerBBB  
+dApp invocations are rewarded with 0.01 WAVES
