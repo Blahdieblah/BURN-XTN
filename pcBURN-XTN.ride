@@ -116,7 +116,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   let burnInput = getIntegerValue(this, keyBurnInput)
   strict burnRate = if treasury > getIntegerValue(this, keyTreasury) 
     then if (burnInput < 100) then invoke(this, "burnAmount", [burnInput+1], []) else unit
-    else if (burnInput > 0) then invoke(this, "burnAmount", [burnInput-1], []) else unit
+    else if (burnInput > 1) then invoke(this, "burnAmount", [burnInput-1], []) else unit
   strict getPZ = if ((assetBalance(this, puzzle) / 2) > 0) then
     invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, (assetBalance(this, puzzle) / 2))]) else unit
   [IntegerEntry("Activated blockheight", height)]
