@@ -1,0 +1,69 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+let puzzleMarket = Address(base58'3PEtLVxDT8mxAh1SDAn8m7JTGNkdpkaFxBk')
+let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
+let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
+
+func tryGetString (address:Address, key:String) = match getString(address, key) 
+{
+  case b: String => b 
+  case _ => ""
+}
+
+func WFSbonus (address:String) =
+{
+  func foldFunc(acc:Int, WFS:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(WFS))
+  + if (tryGetString(puzzleMarket, "nft_" + WFS + "_seller") == address) then 1 else 0
+  FOLD<10>(WFSlist, 0, foldFunc)
+}
+
+func BBBbonus (address:String) =
+{
+ func foldFuncB(acc:Int, BBB:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBB))
+  + if (tryGetString(puzzleMarket, "nft_" + BBB + "_seller") == address) then 1 else 0
+  FOLD<10>(BBBlist, 0, foldFuncB)
+}
+
+@Callable(i)
+func airdrop_plus_NFTbonus (addresses:List[String]) = 
+if size(addresses) > 80 then throw("more then 80 addresses") else 
+{
+  let assetId = i.payments[0].assetId
+  let amount = i.payments[0].amount
+  let amountPerAddress = (amount / size(addresses))
+
+  func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(
+    addressFromStringValue(address), 
+      (fraction(amountPerAddress, 99, 110) 
+      + (if WFSbonus(address) > 0 then fraction(amountPerAddress, 1, 110) else 0) 
+      + (if BBBbonus(address) > 0 then fraction(amountPerAddress, 10, 110) else 0)), 
+    assetId)]
+  FOLD<80>(addresses, nil, f)
+}
+
+@Callable(i)
+func zealyRewards (addresses:List[String]) = 
+if size(addresses) > 11 then throw("more then 11 addresses") else 
+{
+  let assetId = i.payments[0].assetId
+  let amount = i.payments[0].amount
+  
+  func prizeAmount (address:String) =
+    {
+    if address == getElement(addresses, 0) then fraction(amount, 30, 100) else 
+    if address == getElement(addresses, 1) then fraction(amount, 20, 100) else 
+    if address == getElement(addresses, 2) then fraction(amount, 10, 100) else 
+    fraction(amount, 5, 100) 
+    }
+
+  func f (accum:List[ScriptTransfer], address:String) = accum ++ [ScriptTransfer(addressFromStringValue(address), prizeAmount(address), assetId)]
+  FOLD<100>(addresses, nil, f)
+}
+
+@Callable(i)
+func deleteEntry (keyString:String) = 
+if (i.caller != this) then throw("access only by project owner") else
+  {[DeleteEntry(keyString)]}
