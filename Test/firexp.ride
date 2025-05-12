@@ -1,0 +1,210 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+{-# IMPORT artifacts/mainnet.ride #-}
+
+func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
+    case b: Int => 
+        b
+    case _ => 
+        0
+}
+
+func tryGetString (address:Address, key:String) = match getString(address, key) {
+    case b: String => 
+        b
+    case _ => 
+        ""
+}
+
+let d6 = 1000000
+let d8 = 100000000
+
+let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
+let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
+let burnxtnString = toBase58String(burnxtn)
+let waves = base58'WAVES'
+let fireXP = base58'123'
+
+let keyAddressesRegistered = "Addresses registered"
+let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
+let keyAmountRegistered = "Amount Registered"
+let keyParticipants = "participants list string"
+let keyTotalBalanceCount = "total balance count"
+
+let NFT = Address(base58'3PEgVPqJ3NYWbRn1CLELUpuY9KCmragc7sY')
+let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", tryGetString(NFT, "5"), tryGetString(NFT, "6"), tryGetString(NFT, "7"), tryGetString(NFT, "8"), tryGetString(NFT, "9"), tryGetString(NFT, "10")]
+let BBBlist = ["9pCxoGtD18GeH9gCemzqrjHMMjfyBQDfsrRAuxSRagMc", "7DgFgCkBjVDc5P9ZgwsVL9SiTi7kXJuS4aRVgb7ZHW3k", "76bTvE8ttHvsuN1FuH4Kc8QUW4kL4m8c1cjfsXy2GfbV", "4Zrf4H5tiFcQL8eQmnA2wJ1XWPEBH6h1G2MefZDYmcCB", "2DtC4nFnxz5UM6mbjPwMVZpQWZFUqxs52oZrBeNRk9Ao", "DjZGMAFfoQWkMW3S5FTsQN3joncZt6BsmhnEK3ggLxmN", "BneaZXD6ovDJcV5rgfr8hsHZaMQsJQ8DH6a5gTnGCpBc", "4EKfgzFkd5UGKrjnaJV3w7argW1YmF4hq54xWQFzAXb9", "8hGDkWKiu2igDpWT3Hpr4mchDD6xwJ9hGm2h2jnUvTqz", "E3ZnSejpXL1Xr6VG4QoLh8xod9NMgpPe473r9Qk2HibL"]
+
+func rand(i:Invocation)= 
+  i.transactionId 
+    + i.callerPublicKey 
+    + lastBlock.generationSignature 
+    + toBytes(lastBlock.timestamp) 
+    + toBytes(height)
+    + toBytes(assetBalance(this, burnxtn))
+    + toBytes(assetBalance(this, whirlpool))
+
+func burnxtnBalance(i:Invocation)= assetBalance(i.caller, burnxtn)
+
+@Callable(i)
+func register()= 
+
+if (contains(tryGetString(this, keyAddressesRegistered), toString(i.caller))) then throw("already registered") else
+if tryGetInteger(this, keyAmountRegistered) >= 90 then throw("max registered users") else
+{
+  [
+    IntegerEntry(keyAmountRegistered, tryGetInteger(this, keyAmountRegistered) + 1),
+    StringEntry("Register address: " + toString((tryGetInteger(this, keyAmountRegistered) +1)), toString(i.caller)),
+    StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + toString(i.caller) + ",")),
+    IntegerEntry(toString(i.caller), burnxtnBalance(i))
+  ]
+}
+
+@Callable(i)
+func step_1()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict p = invoke(this, "participants", [], []) #1
+    strict u = invoke(this, "updateBalanceEntry", [], []) #95 
+    []
+}
+
+@Callable(i)
+func step_2()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict tba = invoke(this, "totalBalanceAll", [], []) #1
+    strict w = invoke(this, "winner", [], []) # 4
+    strict in = invoke(this, "invoker", [], []) # up to 93 addresses
+    []
+}
+
+@Callable(i)
+func step_3()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict p = invoke(this, "payWinner", [], []) #47
+    []
+}
+
+@Callable(i)
+func step_4()=
+if (i.caller != this) then throw("access only by project owner") else
+{
+    strict ji = invoke(this, "jackpotInvoker", [], []) # up to 99 addresses
+    strict pj = invoke(this, "payJackpot", [], [])
+    []
+}
+
+
+@Callable(i)
+func participants()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+    let list = split_4C(addresses, ",")
+    func p(accum:List[String], address:String)=
+    if (assetBalance(addressFromStringValue(address), burnxtn) < (tryGetInteger(this, address))) then accum else
+    {accum :+ address}
+    let participantsList = {FOLD<1000>(list, nil, p)}
+    let participantsListString = makeString(participantsList, ",")
+    [
+    StringEntry(keyParticipants, participantsListString),
+    IntegerEntry("list size", size(participantsList))
+    ]
+}
+
+@Callable(i)
+func updateBalanceEntry()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+    let list = split_4C(tryGetString(this, keyParticipants), ",")
+    func bal(accum:List[IntegerEntry], address:String)=
+    {accum ++ [IntegerEntry(address, assetBalance(addressFromStringValue(address), burnxtn))]}
+    let updateBalance = {FOLD<100>(list, nil, bal)}
+    [] ++ updateBalance
+}
+
+@Callable(i)
+func totalBalanceAll()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+    let list = split_4C(tryGetString(this, keyParticipants), ",")
+    func ba(accum:Int, address:String)=
+    {accum + assetBalance(addressFromStringValue(address), fireXP)}
+    let enterTotalBalanceAll = {FOLD<100>(list, 0, ba)}
+    [IntegerEntry("total balance all", enterTotalBalanceAll)]
+}
+
+
+@Callable(i)
+func winner()=
+if (i.caller != this) then throw("access only by project owner") else
+if getBooleanValue(this, "reset") == false then throw("reset first") else
+{
+  strict claimInv = invoke(Address(base58'3PE7NtJdmVq4yo47LKDqurQ8RLDCouvJCPB'), "claimIndexRewards", [], [])    
+  let randHash = sha256(rand(i))
+  let randHashInt = toInt(randHash)
+  let result = if (randHashInt < 0) then (-1 * randHashInt) else (randHashInt)
+  [
+  BinaryEntry("rand winner", rand(i)),
+  BinaryEntry("randhash winner", randHash),
+  IntegerEntry("randhash int winner", result),
+  IntegerEntry("result remainder winner", result % getIntegerValue("total balance all") + 1)
+  ]
+}
+
+@Callable(i)
+func invoker()= 
+if (i.caller != this) then throw("access only by project owner") else{
+    let list = split_4C(tryGetString(this, keyParticipants), ",")
+    func r(accum:List[Int], address:String)=
+    {invoke(this, "winnerAddress", [address], [])}
+    strict invoker = {FOLD<100>(list, [], r)}
+    []
+}
+
+@Callable(i)
+func winnerAddress(address:String)=
+if (i.caller != this) then throw("access only by project owner") else{
+    if (tryGetInteger(this, keyTotalBalanceCount) >= tryGetInteger(this, "result remainder winner")) then [] else
+        let count = assetBalance(addressFromStringValue(address), fireXP)
+        if ((tryGetInteger(this, keyTotalBalanceCount) + count) >= tryGetInteger(this, "result remainder winner")) then
+        [IntegerEntry(keyTotalBalanceCount, tryGetInteger(this, keyTotalBalanceCount) + count),
+        StringEntry("winner address", address)] 
+            else [IntegerEntry(keyTotalBalanceCount, tryGetInteger(this, keyTotalBalanceCount) + count)]
+}
+
+@Callable(i)
+func payWinner()=
+if (i.caller != this) then throw("access only by project owner") else{
+    strict burnxtnBalanceBefore = assetBalance(this, burnxtn)
+
+    let burnxtnBalanceAfter = assetBalance(this, burnxtn)
+    strict prizeAmount = fraction((burnxtnBalanceAfter - burnxtnBalanceBefore), 80, 100)
+    let winnerAddress = addressFromStringValue(getStringValue(this, "winner address"))
+
+    func foldFunc(acc:Int, WFS:String) = acc + assetBalance((winnerAddress), fromBase58String(WFS))
+    let shareWFS = FOLD<10>(WFSlist, 0, foldFunc)
+    let WFSbonus = fraction(prizeAmount, 125, 10000)
+
+    func foldFuncB(acc:Int, BBB:String) = acc + assetBalance((winnerAddress), fromBase58String(BBB))
+    let shareBBB = FOLD<10>(BBBlist, 0, foldFuncB)
+    let BBBbonus = fraction(prizeAmount, 125 * 9, 1000)
+    [
+    IntegerEntry("guaranteed prize", prizeAmount),
+    ScriptTransfer(winnerAddress, prizeAmount, burnxtn),
+    IntegerEntry("WFS 1.25% NFT bonus", if shareWFS > 0 then WFSbonus else 0),
+    ScriptTransfer(winnerAddress, if shareWFS > 0 then WFSbonus else 0, burnxtn),
+    IntegerEntry("BBB 11.25% NFT bonus", if shareBBB > 0 then BBBbonus else 0),
+    ScriptTransfer(winnerAddress, if shareBBB > 0 then BBBbonus else 0, burnxtn)
+    ]
+}
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int)= 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
