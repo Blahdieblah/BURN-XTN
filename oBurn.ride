@@ -25,12 +25,16 @@ func invoke4 () =
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   strict swap = if assetBalance(this, wxId) >= 100000 && swapAmount(wxId) >= 100000 then swapWX(wxId, base58'WAVES', swapAmount(wxId)) else unit
+  let amountInvoker = if wavesBalance(invoker).available < (10 * d8) then (10 * d8) - wavesBalance(invoker).available else 0
+  let amountTransfer = if (wavesBalance(this).available <= (2 * d8)) then 0 else 
+    if (wavesBalance(this).available - (2 * d8)) > amountInvoker then amountInvoker
+    else wavesBalance(this).available - (2 * d8)
   [
   IntegerEntry("Activated 3 blockheight", height),
-  ScriptTransfer(invoker, d6, unit),
+  ScriptTransfer(invoker, amountTransfer, unit),
   ScriptTransfer(pcBurn,
     if (wavesBalance(this).available <= (2 * d8)) then 0 else
-    wavesBalance(this).regular - (2 * d8), 
+    wavesBalance(this).available - (2 * d8), 
     unit),
   ScriptTransfer(pcBurn, assetBalance(this, burnxtnId), burnxtnId)
   ]
