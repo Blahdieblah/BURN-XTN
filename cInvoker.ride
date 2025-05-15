@@ -83,8 +83,8 @@ if (i.caller != this && i.caller != burn) then throw("access only by project own
 
 @Callable(i)
 func invokerBurn1() = 
-if lastBlock.timestamp % 86400000 < 50100000 then throw("too early") else
-if lastBlock.timestamp % 86400000 > 50280000 then throw("too late") else
+if getIntegerValue(this, keyActivated) + 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated) + 1440)) else
 if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
 {
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
@@ -92,14 +92,15 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn 
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
-  IntegerEntry(keyInvokeNext, 2)
+  IntegerEntry(keyInvokeNext, 2),
+  IntegerEntry(keyActivated, height)
   ]
 }  
 
 @Callable(i)
 func invokerBurn2() = 
-if lastBlock.timestamp % 86400000 < 50521000 then throw("too early") else
-if lastBlock.timestamp % 86400000 > 50701000 then throw("too late") else
+if getIntegerValue(this, keyActivated2) + 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated2) + 1440)) else
 if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
@@ -109,13 +110,14 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
-  IntegerEntry(keyInvokeNext, 1)
+  IntegerEntry(keyInvokeNext, 1),
+  IntegerEntry(keyActivated2, height)
   ]
 }  
 
 @Callable(i)
 func invokerBurn3() = 
-if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 >= height 
+if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 > height 
 then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
@@ -128,9 +130,8 @@ then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivate
 @Callable(i)
 func invokerRead() = 
 {
-  let currentTodaysTimestamp = lastBlock.timestamp % 86400000
-  let timing1 = if currentTodaysTimestamp >= 50100000 && currentTodaysTimestamp <= 50280000 && tryGetInteger(this, keyInvokeNext) == 1 then true else false
-  let timing2 = if currentTodaysTimestamp >= 50521000 && currentTodaysTimestamp <= 50701000 && tryGetInteger(this, keyInvokeNext) == 2 then true else false
+  let timing1 = if getIntegerValue(this, keyActivated) + 1440 <= height  && tryGetInteger(this, keyInvokeNext) == 1 then true else false
+  let timing2 = if getIntegerValue(this, keyActivated2) + 1440 <= height && tryGetInteger(this, keyInvokeNext) == 2 then true else false
   let timing3 = if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 <= height then true else false
     [
     BooleanEntry("invokerBurn1", timing1),
@@ -147,7 +148,10 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
-  [IntegerEntry(keyInvokeNext, 2)]
+  [
+  IntegerEntry(keyInvokeNext, 2),
+  IntegerEntry(keyActivated, height)
+  ]
 }  
 
 @Callable(i)
@@ -160,7 +164,10 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
   strict stats = invoke(burn, "projectStats", [], [])
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
   strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
-  [IntegerEntry(keyInvokeNext, 1)]
+  [
+  IntegerEntry(keyInvokeNext, 1),
+  IntegerEntry(keyActivated2, height)
+  ]
 }
 
 @Callable(i)
@@ -173,3 +180,8 @@ if i.caller != this then throw("no") else
   strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
   []
 }
+
+@Callable(i)
+func deleteEntry (keyString:String) = 
+if (i.caller != this) then throw("access only by project owner") else
+  {[DeleteEntry(keyString)]}
