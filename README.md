@@ -4,8 +4,8 @@ dApp: https://waves-dapp.com/3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf
 
 # cInvoker.ride for BURN-XTN
 dApp: https://waves-dapp.com/3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9  
-func invokerBurn1 every day at a certain time  
-func invokerBurn2 every day at a certain time  
+func invokerBurn1 after 1440 blocks since last activation
+func invokerBurn2 after 1440 blocks since last activation  
 func invokerBurn3 after 7 * 1440 blocks since last activation  
 dApp invocations are rewarded with 0.01 WAVES
 
