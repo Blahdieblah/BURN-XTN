@@ -58,11 +58,6 @@ then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2
   }
 
 @Callable(i)
-func changeIntegerEntry(keyString:String, integer:Int) = 
-if (i.caller != this) then throw("access only by project owner") else
-    {[IntegerEntry(keyString, integer)]}
-
-@Callable(i)
 func burnXTN() = 
 if (i.caller != this && i.caller != burn) then throw("access only by project owner") else 
 {
@@ -107,7 +102,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict burn3 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
-  strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
+  #strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
   IntegerEntry(keyInvokeNext, 1),
@@ -117,14 +112,18 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
 
 @Callable(i)
 func invokerBurn3() = 
-if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 > height 
-then throw("Wait till blockheight" + toString(getIntegerValue(oBurn, keyActivated3) + 7 * 1440)) else
+if getIntegerValue(this, keyActivated3) + 7 * 1440 > height 
+then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
   strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
-  strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
-  [ScriptTransfer(i.originCaller, d6, unit)]
+  #strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
+  strict cP4 = invoke(pzsc, "eagle1cProjects", [], [])
+  [
+  ScriptTransfer(i.originCaller, d6, unit),
+  IntegerEntry(keyActivated3, height)
+  ]
 }
 
 @Callable(i)
@@ -132,7 +131,7 @@ func invokerRead() =
 {
   let timing1 = if getIntegerValue(this, keyActivated) + 1440 <= height  && tryGetInteger(this, keyInvokeNext) == 1 then true else false
   let timing2 = if getIntegerValue(this, keyActivated2) + 1440 <= height && tryGetInteger(this, keyInvokeNext) == 2 then true else false
-  let timing3 = if getIntegerValue(oBurn, keyActivated3) + 7 * 1440 <= height then true else false
+  let timing3 = if getIntegerValue(this, keyActivated3) + 7 * 1440 <= height then true else false
     [
     BooleanEntry("invokerBurn1", timing1),
     BooleanEntry("invokerBurn2", timing2),
@@ -148,10 +147,7 @@ if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2
   strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
   strict whirlBoost = invoke(whirlPay, "transferMega", [], [])
   strict whirlStats = invoke(whirlPay, "priceStats", [], [])
-  [
-  IntegerEntry(keyInvokeNext, 2),
-  IntegerEntry(keyActivated, height)
-  ]
+  [IntegerEntry(keyInvokeNext, 2)]
 }  
 
 @Callable(i)
@@ -163,11 +159,8 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1
   strict burn3 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
   strict stakeW = if (wavesBalance(whi).available <= d8) then unit else invoke(whi, "stakeUnstake", [true, 0], [])
-  strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
-  [
-  IntegerEntry(keyInvokeNext, 1),
-  IntegerEntry(keyActivated2, height)
-  ]
+  #strict stakeW2 = if (wavesBalance(cold).available <= d8) then unit else invoke(cold, "stakeUnstake", [true, 0], [])
+  [IntegerEntry(keyInvokeNext, 1)]
 }
 
 @Callable(i)
@@ -177,9 +170,15 @@ if i.caller != this then throw("no") else
   strict burn4 = invoke(oBurn, "invoke4", [], [])
   strict cP1 = invoke(pzsc, "burnWhirl1cProjects", [], [])
   strict cP2 = invoke(pzsc, "whirlpool1cProjects", [], [])
-  strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
+  #strict cP3 = invoke(pzsc, "bbb1cProjects", [], [])
+  strict cP4 = invoke(pzsc, "eagle1cProjects", [], [])
   []
 }
+
+@Callable(i)
+func changeIntegerEntry(keyString:String, integer:Int) = 
+if (i.caller != this) then throw("access only by project owner") else
+    {[IntegerEntry(keyString, integer)]}
 
 @Callable(i)
 func deleteEntry (keyString:String) = 
