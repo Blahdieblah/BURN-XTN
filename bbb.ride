@@ -1,7 +1,6 @@
 {-# STDLIB_VERSION 6 #-}
 {-# CONTENT_TYPE DAPP #-}
 {-# SCRIPT_TYPE ACCOUNT #-}
-{-# IMPORT artifacts/mainnet.ride #-}
 
 func tryGetInteger (address:Address, key:String) = match getInteger(address, key) {
     case b: Int => 
@@ -22,44 +21,33 @@ let d6 = 1000000
 
 let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
-let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
+let ultraStaking = Address(base58'3PKUxbZaSYfsR7wu2HaAgiirHYwAMupDrYW')
 let puzzleMarket = Address(base58'3PATXDVE53rKJtkwXYV3tvuLVS2fDtGtKCc')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
-let waves = base58'WAVES'
-let whirlpool = base58'73tY3E6Gd5AWYmsuq8m8Kek7KnJNAYyS3GoveTbc6jCi'
 let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
 let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 
-let puzzleStaked = tryGetInteger(puzzleStaking, toString(this) + "_staked")
 let puzzleInPool = tryGetInteger(Address(poolBBB), ("global_" + toBase58String(puzzle)) + "_balance")
 let projectStake = tryGetInteger(Address(poolBBB), (toString(this) + "_indexStaked"))
 let totalStake = tryGetInteger(Address(poolBBB), ("global_poolToken_amount"))
 let assetWeight = tryGetInteger(Address(poolBBB), ("static_" + toBase58String(puzzle)) + "_weight")
-let BBBlpInPuzzle = fraction(puzzleInPool / assetWeight * 10000, projectStake, totalStake)
-let totalPuzzle = puzzleStaked + BBBlpInPuzzle + assetBalance(this, puzzle)
 
 let keyAddressesRegistered = "Addresses registered"
 let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
 let keyBurnxtnAmount = "BURN-XTN total rewards"
 let keyRomeAmount = "ROME total rewards"
 let keyPuzzleAmount = "PUZZLE total rewards"
-let keyWavesAmount = "WAVES total rewards"
-let keyWhirlpoolAmount = "WHIRLPOOL total rewards"
-let keyTotalPuzzleValue = "Total puzzle value"
 
 let keyTotalBurnxtnPaid = "Total BURN-XTN paid"
-let keyTotalWhirlpoolPaid = "Total WHIRLPOOL paid"
 let keyTotalRomePaid = "Total ROME paid"
-let keyTotalWavesPaid = "Total WAVES paid"
 let keyTotalPuzzlePaid = "Total PUZZLE paid"
-let keyRomeBalance = "ROME balance"
+
 let keyInvokeNext = "invoke next"
-let keyTradeMode = "trade mode"
 let keyBBQreward = "BBQ reward"
 
 let WFSlist = ["Gnpy5nVajPP3XQQVxrHboMAsXtjnyWAxybMDdKrbr8sD", "BT9Q4mQdQQmei2r5YNMBMasZBQj7myNaiz6QHba5cPXS", "BMvkyFtPVmFatpFR9QVFKR5MYTcZVTY2VUwFZ25vrAAc", "77Rqu8TLjBdMtDuXd9o5fUSGo64zQe5FCcao5L8Ht9j8", "8KnhBLV49SDJzq1SSy1YvGHYY6m7Q146bV7Q6GKqQb5C", "FFxsUfKbHEW4zZywLUL55ip8Nqp6fcWDsq7y3an9yQhe", "5nQRedGHoVpEQasMQivb1UMvFBCHXefXPXtURbMMnfsu", "6N3MSFtJGvT79ucX4pLftxP7fGs8DnmYdPedvnoNbVt9", "dFC2iJL4LDWasq9YzHf2kWfPNP69Tyamii93ns9BHvM", "A158T7yZLtmuiMEs21P9jV2ftbMXzy3MnfHMEu1eMAGK"]
@@ -92,10 +80,8 @@ let BBQlist = ["HRP1T1JMBFRfrsci8q2DhTyEDSy3GokG4puAaWqfSEge", "6GYMMKSpoqSvjeAA
 func claimInvestPuzzle()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
-    strict claimPuzzleStaking = invoke(puzzleStaking, "claimReward", [], [])
-    strict inv = 
-      if (getBooleanValue(this, keyTradeMode) == true) then
-      invoke(Address(poolBBB), "claimIndexRewards", [], []) else
+    strict claimUltraStaking = invoke(ultraStaking, "claimReward", [], [])
+    strict inv =
       if (assetBalance(this, puzzle) > 0) then
       invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
 
@@ -104,10 +90,8 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
     [
     IntegerEntry("Activated blockheight", height),
     IntegerEntry(keyBurnxtnAmount, assetBalance(this, burnxtn)),
-    IntegerEntry(keyRomeAmount, if (getBooleanValue(this, keyTradeMode) == true) then 0 else
-      assetBalance(this, rome) - getIntegerValue(this, keyRomeBalance)),
-    IntegerEntry(keyWavesAmount, if (wavesBalance(this).available - d8) > 0 then (wavesBalance(this).available - d8) else 0),
-    IntegerEntry(keyWhirlpoolAmount, assetBalance(this, whirlpool)),
+    IntegerEntry(keyRomeAmount, assetBalance(this, rome)),
+    IntegerEntry(keyPuzzleAmount, assetBalance(this, puzzle)),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
     IntegerEntry(keyInvokeNext, 2)
     ]
@@ -161,14 +145,12 @@ func trackTotalPaid()=
 if (i.caller != this) then throw("access only by project owner") else
 {
   let amountBurnxtn = tryGetInteger(this, keyBurnxtnAmount)
-  let amountWhirlpool = tryGetInteger(this, keyWhirlpoolAmount)
-  let amountWaves = tryGetInteger(this, keyWavesAmount)
   let amountRome = tryGetInteger(this, keyRomeAmount)
+  let amountPuzzle = tryGetInteger(this, keyPuzzleAmount)
   [
   IntegerEntry(keyTotalBurnxtnPaid, amountBurnxtn + tryGetInteger(this, keyTotalBurnxtnPaid)),
-  IntegerEntry(keyTotalWhirlpoolPaid, amountWhirlpool + tryGetInteger(this, keyTotalWhirlpoolPaid)),
-  IntegerEntry(keyTotalWavesPaid, amountWaves + tryGetInteger(this, keyTotalWavesPaid)),
-  IntegerEntry(keyTotalRomePaid, amountRome + tryGetInteger(this, keyTotalRomePaid))
+  IntegerEntry(keyTotalRomePaid, amountRome + tryGetInteger(this, keyTotalRomePaid)),
+  IntegerEntry(keyTotalPuzzlePaid, amountPuzzle + tryGetInteger(this, keyTotalPuzzlePaid))
   ]  
 }
 
@@ -203,14 +185,12 @@ if (i.caller != this) then throw("access only by project owner") else
     else
 
     let amountBurnxtn = fraction(tryGetInteger(this, keyBurnxtnAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountWhirlpool = fraction(tryGetInteger(this, keyWhirlpoolAmount), (shareWFS + (shareBBB * 10)), 110)
-    let amountWaves = fraction(tryGetInteger(this, keyWavesAmount), (shareWFS + (shareBBB * 10)), 110)
     let amountRome = fraction(tryGetInteger(this, keyRomeAmount), (shareWFS + (shareBBB * 10)), 110)
+	let amountPuzzle = fraction(tryGetInteger(this, keyPuzzleAmount), (shareWFS + (shareBBB * 10)), 110)
     [
     ScriptTransfer(addressFromStringValue(address), amountBurnxtn, burnxtn),
-    ScriptTransfer(addressFromStringValue(address), amountWhirlpool, whirlpool),
-    ScriptTransfer(addressFromStringValue(address), amountWaves, unit),
     ScriptTransfer(addressFromStringValue(address), amountRome, rome),
+	ScriptTransfer(addressFromStringValue(address), amountPuzzle, puzzle),
     ScriptTransfer(addressFromStringValue(address), if assetBalance(this, surf) >= (amountSURFboard * d6) then amountSURFboard * d6 else 0, surf)
     ]
 }
@@ -238,11 +218,6 @@ if (contains(tryGetString(this, keyAddressesRegistered), address)) then throw("a
 {[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + address + ","))]}
 
 @Callable(i)
-func setRomeBalance(amount:Int) = 
-if (i.caller != this) then throw("access only by project owner") else
-    {[IntegerEntry(keyRomeBalance, amount * d6)]}
-
-@Callable(i)
 func deleteEntry() = 
 if (i.caller != this) then throw("access only by project owner") else
     {[DeleteEntry(keyAddressesRegistered)]}
@@ -251,33 +226,3 @@ if (i.caller != this) then throw("access only by project owner") else
 func changeIntegerEntry(keyString:String, integer:Int) = 
 if (i.caller != this) then throw("access only by project owner") else
     {[IntegerEntry(keyString, integer)]}
-
-@Callable(i)
-func setTradeMode(tradeMode:Boolean) =
-if (i.caller != this) then throw("access only by project owner") else
-{
-  [BooleanEntry(keyTradeMode, tradeMode)]
-}
-
-@Callable(i)
-func stats() =
-{
-  [
-  IntegerEntry("puzzle balance", assetBalance(this, puzzle)),
-  IntegerEntry("puzzle staked", puzzleStaked),
-  IntegerEntry("puzzle BBB LP", BBBlpInPuzzle),
-  IntegerEntry(keyTotalPuzzleValue, assetBalance(this, puzzle) + puzzleStaked + BBBlpInPuzzle),
-  IntegerEntry("WFS puzzle value", fraction(
-    fraction(tryGetInteger(this, keyTotalPuzzleValue),
-    1, 
-    110),
-      10,
-       9)), 
-  IntegerEntry("BBB puzzle value", fraction(
-    fraction(tryGetInteger(this, keyTotalPuzzleValue),
-    10, 
-    110),
-    10,
-    9))
-    ]
-}
