@@ -213,9 +213,9 @@ if (contains(tryGetString(this, keyAddressesRegistered), address)) then throw("a
 {[StringEntry(keyAddressesRegistered, (tryGetString(this, keyAddressesRegistered) + address + ","))]}
 
 @Callable(i)
-func deleteEntry() = 
+func deleteEntry (keyString:String) = 
 if (i.caller != this) then throw("access only by project owner") else
-    {[DeleteEntry(keyAddressesRegistered)]}
+{[DeleteEntry(keyString)]}
 
 @Callable(i)
 func changeIntegerEntry(keyString:String, integer:Int) = 
