@@ -32,11 +32,6 @@ let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 
-let puzzleInPool = tryGetInteger(Address(poolBBB), ("global_" + toBase58String(puzzle)) + "_balance")
-let projectStake = tryGetInteger(Address(poolBBB), (toString(this) + "_indexStaked"))
-let totalStake = tryGetInteger(Address(poolBBB), ("global_poolToken_amount"))
-let assetWeight = tryGetInteger(Address(poolBBB), ("static_" + toBase58String(puzzle)) + "_weight")
-
 let keyAddressesRegistered = "Addresses registered"
 let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
 let keyBurnxtnAmount = "BURN-XTN total rewards"
