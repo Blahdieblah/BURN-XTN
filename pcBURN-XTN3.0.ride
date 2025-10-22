@@ -13,20 +13,14 @@ let keyBurnAmount = "burn amount"
 let keyBurnInput = "burn input"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
 let keyMaxSwap = "max amount swap"
-let keyHarvestSwop = "harvest SWOP"
 
 let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
-let swopSWOPxtn = Address(base58'3P27S9V36kw2McjWRZ37AxTx8iwkd7HXw6W')
-let swopShareTokens = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
-let swopFarm = Address(base58'3P73HDkPqG15nLXevjCbmXtazHYTZbpPoPw')
-let swopGov = Address(base58'3PLHVWCqA9DJPDbadUofTohnCULLauiDWhS')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 let oburn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 
 let d6 = 1000000
 let d8 = 100000000
 
-let poolLP = base58'3PQoBfUKHkJAeGWhooLP7WS8ovb54av9Jp2'
 let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
 let poolBW = base58'3P48ZN6yghcoQaHPtLM9V2hFc5cd4ARd1hc'
 
@@ -34,26 +28,16 @@ let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
-let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
-let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
-let swopId = base58'Ehie5xYpeN8op1Cctc6aGUrqx8jq3jtf1DSjXDbfm7aT'
 
 func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
   {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
-
-func swapAmount(assetid:ByteVector) = 
-{if assetBalance(this, assetid) > getIntegerValue(keyMaxSwap) then getIntegerValue(keyMaxSwap) else assetBalance(this, assetid)}
 
 @Callable(i)
 func invoke1() = 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
   strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
-  let amount = if (wavesBalance(this).regular - d8) > 0 && (wavesBalance(this).regular - d8) < d8 then (wavesBalance(this).regular - d8) else d8
-  let burnInput = getIntegerValue(this, keyBurnInput)
-  let puzzleAmount = if (assetBalance(this, puzzle) / 2) > d8 then d8 else assetBalance(this, puzzle) / 2
-  strict getPZ = if ((assetBalance(this, puzzle) / 2) > 0) then
-    invoke(Address(poolLP), "generateWithOneToken", [toBase58String(poolBBB)], [AttachedPayment(puzzle, puzzleAmount)]) else unit
+  strict claimInvB = invoke(Address(poolBBB), "claimIndexRewards", [], [])
   [IntegerEntry("Activated blockheight", height)]
 }
 
@@ -69,13 +53,6 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
   strict swapXtnBurnxtn = if assetBalance(this, xtnId) >= 3 * tryGetInteger(this, keyBurnAmount) then swapWX(xtnId, burnxtnId, tryGetInteger(this, keyBurnAmount) * 2) else unit
   let burnxtnDifference = (assetBalance(this, burnxtnId) - burnxtnBalanceBefore) / 2
 
-  strict stakePZbbb = if (assetBalance(this, pzBBB) > 0) then
-    invoke(Address(poolBBB), "stakeIndexFor", [toString(this)], [AttachedPayment(pzBBB, assetBalance(this, pzBBB))]) else unit
-
-  strict withdrawSwopGov = if (getBooleanValue(this, keyHarvestSwop) == true) then invoke(swopGov, "claimAndWithdrawSWOP", [], []) else unit
-  strict withdrawSwopFarm = if (getBooleanValue(this, keyHarvestSwop) == true) then invoke(swopFarm, "claimAll", [["3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG", "3PB9YQ3f1moai3Ra4tbJDM3uJy1esQNJ4aT"]], []) else unit
-  strict swapSwopXtn = if assetBalance(this, swopId) >= 10000 && swapAmount(swopId) >= 10000 
-    then invoke(swopSWOPxtn, "callFunction", ["exchange", ["1"]], [AttachedPayment(swopId, swapAmount(swopId))]) else unit
   [
   ScriptTransfer(invoker, if assetBalance(this, xtnId) >= tryGetInteger(this, keyBurnAmount) then tryGetInteger(this, keyBurnAmount) else 0, xtnId),
   ScriptTransfer(invoker, surfDifference, surfId),
@@ -93,16 +70,6 @@ if (i.caller != this) then throw("access only by project owner") else
   IntegerEntry(keyBurnInput, amount)
   ]
 }
-
-@Callable(i)
-func maxAmount(maxSwap:Int) =
-if (i.caller != this) then throw("access only by project owner") else 
-{[IntegerEntry(keyMaxSwap, maxSwap * d8)]}
-
-@Callable(i)
-func harvestSwop(harvest:Boolean) =
-if (i.caller != this) then throw("access only by project owner") else 
-{[BooleanEntry(keyHarvestSwop, harvest)]}
 
 @Callable(i)
 func projectStats() =
