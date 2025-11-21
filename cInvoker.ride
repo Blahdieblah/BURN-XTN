@@ -102,6 +102,7 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
   strict burn3 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
+  strict burn4 = invoke(bbb, "buyBurn", [], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
   IntegerEntry(keyInvokeNext, 1),
