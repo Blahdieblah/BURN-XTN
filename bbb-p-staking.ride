@@ -39,6 +39,7 @@ let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
 let keyBurnxtnAmount = "BURN-XTN total rewards"
 
 let keyBURNXTNpercentage = "BURN-XTN % rewards"
+let keyAmountPuzzle = "Payment Amount Puzzle"
 
 let keyTotalBurnxtnPaid = "Total BURN-XTN paid"
 
@@ -77,9 +78,11 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 {
     strict claimUltraStaking = invoke(ultraStaking, "claimReward", [], [])
     strict stakeP = if assetBalance(this, puzzle) > 2 then invoke(puzzleStaking, "stake", [], [AttachedPayment(puzzle, assetBalance(this, puzzle) / 2)]) else unit
+    let amountPuzzle = if (assetBalance(this, puzzle) / 7) > d8 then d8 else (assetBalance(this, puzzle) / 7)
     [
     IntegerEntry("Activated blockheight", height),
-    IntegerEntry(keyBurnxtnAmount, (assetBalance(this, burnxtn) * getIntegerValue(keyBURNXTNpercentage) / 100)),
+    IntegerEntry(keyBurnxtnAmount, fraction(assetBalance(this, burnxtn), getIntegerValue(keyBURNXTNpercentage), 100)),
+    IntegerEntry(keyAmountPuzzle, amountPuzzle),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
     IntegerEntry(keyInvokeNext, 2)
     ]
@@ -89,19 +92,19 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func buyBurn()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
-    strict buyBurn = invoke(Address(poolBBB), "swap", [burnString, 1], [AttachedPayment(puzzle, assetBalance(this, puzzle) / 7)])
+    strict buyBurn = if getIntegerValue(keyAmountPuzzle) > 1 then invoke(Address(poolBBB), "swap", [burnString, 1], [AttachedPayment(puzzle, getIntegerValue(keyAmountPuzzle))]) else unit
     []
 }
 
 @Callable(i)
-func setBURNXTN(perecentage:Int)= 
+func setBURNXTN(percentage:Int)= 
 if (i.caller != this) then throw("access only by project owner") else
-{[IntegerEntry(keyBURNXTNpercentage, perecentage)]}
+{[IntegerEntry(keyBURNXTNpercentage, percentage)]}
 
 @Callable(i)
-func setBBQreward(XTNdiv100:Int)= 
+func setBBQreward(BURNXTN:Int)= 
 if (i.caller != this) then throw("access only by project owner") else
-{[IntegerEntry(keyBBQreward, XTNdiv100)]}
+{[IntegerEntry(keyBBQreward, BURNXTN)]}
 
 @Callable(i)
 func distributeBBQ()= 
@@ -121,7 +124,7 @@ if (i.caller != this) then throw("access only by project owner") else
     func foldFuncD(acc:Int, BBQ:String) = acc + assetBalance(addressFromStringValue(address), fromBase58String(BBQ))
     + if (tryGetString(puzzleMarket, "nft_" + BBQ + "_seller") == address) then 1 else 0
     let amountBBQ = FOLD<4>(BBQlist, 0, foldFuncD)
-    [ScriptTransfer(addressFromStringValue(address), if assetBalance(this, xtnId) >= fraction(d6, getIntegerValue(this, keyBBQreward), 100) then amountBBQ * fraction(d6, getIntegerValue(this, keyBBQreward), 100) else 0, xtnId)]
+    [ScriptTransfer(addressFromStringValue(address), if assetBalance(this, burnxtn) >= (d8 * getIntegerValue(this, keyBBQreward)) then amountBBQ * (d8 * getIntegerValue(this, keyBBQreward)) else 0, burnxtn)]
 }
 
 @Callable(i)
