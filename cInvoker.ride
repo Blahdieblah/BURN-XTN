@@ -77,27 +77,12 @@ if (i.caller != this && i.caller != burn) then throw("access only by project own
   IntegerEntry("XTN total burned", getIntegerValue(this, "XTN total burned") + xtnBurnAmount),
   IntegerEntry("SURF total burned", tryGetInteger(this, "SURF total burned") + surfBurnAmount)
   ]
-}
-
-@Callable(i)
-func invokerBurn1() = 
-if getIntegerValue(this, keyActivated) + 1440 > height 
-then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated) + 1440)) else
-if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn first") else
-{
-  strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
-  [
-  ScriptTransfer(i.originCaller, d6, unit),
-  IntegerEntry(keyInvokeNext, 2),
-  IntegerEntry(keyActivated, height)
-  ]
-}  
+} 
 
 @Callable(i)
 func invokerBurn2() = 
 if getIntegerValue(this, keyActivated2) + 1440 > height 
 then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated2) + 1440)) else
-if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn first") else
 {
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
   strict burn3 = invoke(this, "burnXTN", [], [])
@@ -105,7 +90,6 @@ if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn 
   strict burn4 = invoke(bbb, "buyBurn", [], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
-  IntegerEntry(keyInvokeNext, 1),
   IntegerEntry(keyActivated2, height)
   ]
 }  
@@ -124,36 +108,14 @@ then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated
 }
 
 @Callable(i)
-func invokerRead() = 
-{
-  let timing1 = if getIntegerValue(this, keyActivated) + 1440 <= height  && tryGetInteger(this, keyInvokeNext) == 1 then true else false
-  let timing2 = if getIntegerValue(this, keyActivated2) + 1440 <= height && tryGetInteger(this, keyInvokeNext) == 2 then true else false
-  let timing3 = if getIntegerValue(this, keyActivated3) + 7 * 1440 <= height then true else false
-  [
-  BooleanEntry("invokerBurn1", timing1),
-  BooleanEntry("invokerBurn2", timing2),
-  BooleanEntry("invokerBurn3", timing3)
-  ]
-}  
-
-@Callable(i)
-func invokerBurn1t() = 
-if i.caller != this then throw("no") else
-if tryGetInteger(this, keyInvokeNext) != 1 then throw("invoke other invokerBurn2 first") else
-{
-  strict burn1 = reentrantInvoke(burn, "invoke1", [], [])
-  [IntegerEntry(keyInvokeNext, 2)]
-}  
-
-@Callable(i)
 func invokerBurn2t() = 
 if i.caller != this then throw("no") else
-if tryGetInteger(this, keyInvokeNext) != 2 then throw("invoke other invokerBurn1 first") else
 {
   strict burn2 = reentrantInvoke(burn, "invoke2", [], [])
   strict burn3 = invoke(this, "burnXTN", [], [])
   strict stats = invoke(burn, "projectStats", [], [])
-  [IntegerEntry(keyInvokeNext, 1)]
+  strict burn4 = invoke(bbb, "buyBurn", [], [])
+  []
 }
 
 @Callable(i)
