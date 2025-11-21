@@ -1,5 +1,5 @@
 # BURN-XTN dApp 
-Performs all project actions, according to tokenomics model: https://www.burnxtn.tech  
+Performs all project actions, according to tokenomics model: [https://www.burnxtn.tech  ](https://sites.google.com/view/burn-xtn/burn-xtn)
 dApp: https://waves-dapp.com/3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf
 
 # cInvoker.ride for BURN-XTN
@@ -12,7 +12,7 @@ dApp invocations are rewarded with 0.01 WAVES
 # NFT Series
 dApp: https://waves-dapp.com/3P6GgqAF4Vv4g2PFsevhKUW7JGtVUfvbULV  
 Registration of wallet address for distributing rewards.  
-According to tokenomics model: https://www.burnxtn.tech/nft-series
+According to tokenomics model: [https://www.burnxtn.tech/nft-series](https://sites.google.com/view/burn-xtn/nft-series)
 
 # cInvoker.ride for NFT Series
 dApp is callable by anybody after 7 * 1440 blocks since last activation, through dApp: https://waves-dapp.com/3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9 func invokerBBB  
