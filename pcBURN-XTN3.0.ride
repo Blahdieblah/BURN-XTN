@@ -12,7 +12,6 @@ func tryGetInteger (address:Address, key:String)= match getInteger(address, key)
 let keyBurnAmount = "burn amount"
 let keyBurnInput = "burn input"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
-let keyMaxSwap = "max amount swap"
 
 let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
@@ -21,9 +20,6 @@ let oburn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 let d6 = 1000000
 let d8 = 100000000
 
-let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
-let poolBW = base58'3P48ZN6yghcoQaHPtLM9V2hFc5cd4ARd1hc'
-
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
@@ -31,15 +27,6 @@ let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
 
 func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
   {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
-
-@Callable(i)
-func invoke1() = 
-if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
-{
-  strict claimInvW = invoke(Address(poolBW), "claimIndexRewards", [], [])
-  strict claimInvB = invoke(Address(poolBBB), "claimIndexRewards", [], [])
-  [IntegerEntry("Activated blockheight", height)]
-}
 
 @Callable(i)
 func invoke2() =
