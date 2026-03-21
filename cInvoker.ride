@@ -100,7 +100,7 @@ if getIntegerValue(this, keyActivated3) + 7 * 1440 > height
 then throw("Wait till blockheight" + toString(getIntegerValue(this, keyActivated3) + 7 * 1440)) else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
-  strict cP4 = invoke(pzsc, "eagle1cProjects", [], [])
+  strict cP4 = invoke(pzsc, "bbb1pcBurn", [], [])
   [
   ScriptTransfer(i.originCaller, d6, unit),
   IntegerEntry(keyActivated3, height)
