@@ -25,7 +25,7 @@ let oBurn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 let burn = Address(base58'3PDgtvrFh5aoDDuGUACNSudC6bRafs4DExf') # pcBurn
 let bbb = Address(base58'3P6GgqAF4Vv4g2PFsevhKUW7JGtVUfvbULV') # pcBBB
 let pzsc = Address(base58'3PHLhWPrs1mrpM1ZDUv1VmUnZRwchADJELc')
-let rewardsAddress = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
+#let rewardsAddress = Address(base58'3P6H24XKLyRX8RKwyA5ARsChE6WhjDcVBiZ')
 let hot3 = Address(base58'3PAkmJniMgnnAej5pYf2jFYkCbZow5pt9tr')
 let hot = Address(base58'3PPCzX2doZ7agBNuGSKqjrbdXgGEtE7CpQ3')
 
@@ -54,7 +54,7 @@ if getIntegerValue(bbb, keyActivated2) + 7 * 1440 > height
 then throw("Wait till blockheight" + toString(getIntegerValue(bbb, keyActivated2) + 7 * 1440)) else
 {
   strict inv = invoke(bbb, "distribute", [], [])
-  strict admin = invoke(rewardsAddress, "adminRewards", [], [])
+  #strict admin = invoke(rewardsAddress, "adminRewards", [], [])
   strict ct = invoke(hot3, "claimTransfer", [], [])
   strict cs = invoke(hot, "claimSwapStake", [], [])
   [ScriptTransfer(i.originCaller, d6, unit)]
@@ -123,7 +123,7 @@ func invokerBurn3t() =
 if i.caller != this then throw("no") else
 {
   strict burn4 = invoke(oBurn, "invoke4", [], [])
-  strict cP4 = invoke(pzsc, "eagle1cProjects", [], [])
+  strict cP4 = invoke(pzsc, "bbb1pcBurn", [], [])
   []
 }
 
