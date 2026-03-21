@@ -25,6 +25,7 @@ let ultraStaking = Address(base58'3PKUxbZaSYfsR7wu2HaAgiirHYwAMupDrYW')
 let puzzleMarket = Address(base58'3PATXDVE53rKJtkwXYV3tvuLVS2fDtGtKCc')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
+let PZLstaking = Address(base58'3PJUHFBuuztWicMTxBQh8LqJtQW6mxbJcwJ')
 
 let burnxtn = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
 let burnString = "3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns"
@@ -33,6 +34,7 @@ let rome = base58'AP4Cb5xLYGH6ZigHreCZHoXpQTWDkPsG2BHqfDUx6taJ'
 let surf = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
 let pzBBB = base58'AE12ZN9PQyPKHR5CqR2Qau31JqS68rZbVYxaJbRM8kFj'
 let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let pzl = base58'DgER5m4fWpSFXhXDBxBye1B4HHCwdRttsbU5LBz6XEYs'
 
 let keyAddressesRegistered = "Addresses registered"
 let addresses = dropRight(tryGetString(this, keyAddressesRegistered), 1)
@@ -78,11 +80,10 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 {
     strict claimUltraStaking = invoke(ultraStaking, "claimReward", [], [])
     strict stakeP = if assetBalance(this, puzzle) > 2 then invoke(puzzleStaking, "stake", [], [AttachedPayment(puzzle, assetBalance(this, puzzle) / 2)]) else unit
-    let amountPuzzle = if (assetBalance(this, puzzle) / 7) > d8 then d8 else (assetBalance(this, puzzle) / 7)
+    strict mintPZL = if assetBalance(this, puzzle) > 1 then invoke(PZLstaking, "mintLP", ["ivan"], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
     [
     IntegerEntry("Activated blockheight", height),
     IntegerEntry(keyBurnxtnAmount, fraction(assetBalance(this, burnxtn), getIntegerValue(keyBURNXTNpercentage), 100)),
-    IntegerEntry(keyAmountPuzzle, amountPuzzle),
     ScriptTransfer(invoker, if i.caller == invoker then d6 else 0, unit),
     IntegerEntry(keyInvokeNext, 2)
     ]
@@ -92,7 +93,7 @@ if (i.caller != this && i.caller != invoker) then throw("access only by project 
 func buyBurn()= 
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else
 {
-    strict buyBurn = if getIntegerValue(keyAmountPuzzle) > 1 then invoke(Address(poolBBB), "swap", [burnString, 1], [AttachedPayment(puzzle, getIntegerValue(keyAmountPuzzle))]) else unit
+    strict buyBurn = if getIntegerValue(keyAmountPuzzle) > 1 then invoke(Address(poolBBB), "swap", [burnString, 1], [AttachedPayment(pzl, assetBalance(this, pzl) / 7)]) else unit
     []
 }
 
