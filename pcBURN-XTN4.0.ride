@@ -8,43 +8,39 @@ func tryGetInteger (address:Address, key:String)= match getInteger(address, key)
     case _ => 
         0
 }
+let d6 = 1000000
+let d8 = 100000000
 
 let keyBurnAmount = "burn amount"
 let keyBurnInput = "burn input"
 let keyBurnxtnAmount = "burn BURN-XTN amount"
 
-let swopXTNsurf = Address(base58'3PLp9KrdrbWAvSFHGJVEaszUubquz3M6mfe')
 let invoker = Address(base58'3P1yEqCmumg3rJmuNA39HMav6UxknqtYkb9')
 let oburn = Address(base58'3PAucbbumdUXmhzcR421zGiayphEdo2tRoz')
 
-let d6 = 1000000
-let d8 = 100000000
+let poolBBB = base58'3P9VPwVfNj3dDevQZt1Z951A4K57cmQmCgk'
+let puzzleStaking = Address(base58'3PFTbywqxtFfukX3HyT881g4iW5K4QL3FAS')
+let PZLstaking = Address(base58'3PJUHFBuuztWicMTxBQh8LqJtQW6mxbJcwJ')
 
-let xtnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let puzzle = base58'HEB8Qaw9xrWpWs8tHsiATYGBWDBtP2S7kcPALrMu43AS'
+let pzl = base58'DgER5m4fWpSFXhXDBxBye1B4HHCwdRttsbU5LBz6XEYs'
 let burnxtnId = base58'3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns'
-let surfId = base58'At8D6NFFpheCbvKVnjVoeLL84Eo8NZn6ovManxfLaFWL'
-let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
-
-func swapWX(assetIn:ByteVector, assetOut:ByteVector, amountIn:Int) =
-  {invoke(Address(base58'3P68zNiufsu1viZpu1aY3cdahRRKcvV5N93'), "swap", [1, toBase58String(assetOut), toString(this)], [AttachedPayment(assetIn, amountIn)])}
+let burnString = "3SjxA2YLdfF9fTRbzLm9xFn27C6MW34W1YsdJ6Axefns"
 
 @Callable(i)
 func invoke2() =
 if (i.caller != this && i.caller != invoker) then throw("access only by project owner") else 
 {
-  strict surfBalanceBefore = assetBalance(this, surfId)
-  strict swapXtnSurf = if assetBalance(this, xtnId) >= 4 * tryGetInteger(this, keyBurnAmount) then invoke(swopXTNsurf, "callFunction", ["exchange", ["1"]], [AttachedPayment(xtnId, tryGetInteger(this, keyBurnAmount))]) else unit
-  let surfDifference = (assetBalance(this, surfId) - surfBalanceBefore) / 2
-
   strict burnxtnBalanceBefore = assetBalance(this, burnxtnId)
-  strict swapXtnBurnxtn = if assetBalance(this, xtnId) >= 3 * tryGetInteger(this, keyBurnAmount) then swapWX(xtnId, burnxtnId, tryGetInteger(this, keyBurnAmount) * 2) else unit
+
+  strict claimP = invoke(puzzleStaking, "claimReward", [], [])
+  strict mintPZL = if assetBalance(this, puzzle) > 1 then invoke(PZLstaking, "mintLP", ["ivan"], [AttachedPayment(puzzle, assetBalance(this, puzzle))]) else unit
+  strict buyBurn = if assetBalance(this, pzl) > 1 then invoke(Address(poolBBB), "swap", [burnString, 1], [AttachedPayment(pzl, assetBalance(this, pzl))]) else unit
+  
   let burnxtnDifference = (assetBalance(this, burnxtnId) - burnxtnBalanceBefore) / 2
 
   [
-  ScriptTransfer(invoker, if assetBalance(this, xtnId) >= tryGetInteger(this, keyBurnAmount) then tryGetInteger(this, keyBurnAmount) else 0, xtnId),
-  ScriptTransfer(invoker, surfDifference, surfId),
-  ScriptTransfer(invoker, burnxtnDifference, burnxtnId),
-  ScriptTransfer(oburn, assetBalance(this, wxId), wxId)
+  ScriptTransfer(invoker, burnxtnDifference, burnxtnId)
   ]
 }
 
